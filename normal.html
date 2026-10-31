@@ -530,6 +530,11 @@ button.tier:hover:not(:disabled) { border-color: var(--gold); background: var(--
 .toc button { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer; }
 .toc button:hover { color: var(--gold-2); border-color: var(--line-2); }
 .dialog.rules h4 { scroll-margin-top: 104px; }
+.quitopts { display: grid; gap: 10px; margin: 16px 0 6px; }
+.qopt { display: grid; gap: 4px; text-align: left; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); color: inherit; font: inherit; cursor: pointer; transition: border-color .15s, background .15s; }
+.qopt b { font-size: 16px; color: var(--gold-2); font-weight: 600; }
+.qopt span { font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+.qopt:hover, .qopt:focus-visible { border-color: var(--line-2); background: rgba(214,178,94,.08); outline: none; }
 .plabel .lents { display: inline-flex; align-items: center; gap: 2px; margin-left: 6px; padding-left: 6px; border-left: 1px solid rgba(255,255,255,.25); color: #cfe6ff; }
 .plabel .lents.none { color: #ff9f8f; }
 .plabel .lents svg { width: 11px; height: 11px; }
@@ -585,7 +590,7 @@ document.documentElement.className += ' js';
           <button class="tool" type="button" data-tool="settings" title="Einstellungen und Hausregeln"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span>Einstellungen</span></button>
           <button class="tool" type="button" data-tool="saves" title="Spielstände speichern und laden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg><span>Spielstände</span></button>
           <button class="tool" type="button" data-tool="new" title="Neues Spiel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span>Neues Spiel</span></button>
-          <button class="tool quit" type="button" data-tool="quit" title="Spiel beenden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M6.3 7.3a8 8 0 1011.4 0"/></svg><span>Beenden</span></button>
+          <button class="tool quit" type="button" data-tool="quit" title="Partie beenden: zum Hauptmenü oder Spiel schließen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M6.3 7.3a8 8 0 1011.4 0"/></svg><span>Beenden</span></button>
         </div>
       </div>
     </div>
@@ -636,6 +641,7 @@ document.documentElement.className += ' js';
 
 </script>
 <script>
+const ENGINE_HASH = '8f3c50e857';
 // Ältere Browser (Safari vor 15.4) kennen structuredClone noch nicht
 if (typeof structuredClone !== 'function') globalThis.structuredClone = o => JSON.parse(JSON.stringify(o));
 // ================= HOTEL – SPIEL-ENGINE =================
@@ -686,6 +692,9 @@ const DEFAULT_RULES = {
   undo: 'off',          // Zug zurücknehmen: 'off' | 'roll' (bis zum letzten Wurf) | 'free'
   savingsOffer: 'button', // Festgeld an der Bank: 'button' = Knopf im Zug | 'ask' = nachfragen | 'off' = nie anbieten
 };
+// „im Möwennest“, aber „in der Lagune“
+const HOTEL_FEM = new Set(['Kirschblüte', 'Wüstenrose', 'Lagune', 'Kasbah']);
+const inH = h => (HOTEL_FEM.has(HOTELS[h].name) ? 'in der ' : 'im ') + HOTELS[h].name;
 const rulesOf = st => Object.assign({}, DEFAULT_RULES, st.rules || {});
 const BUILD_DIE = ['gruen', 'gruen', 'gruen', 'rot', 'H', '2'];
 const INTEREST = { low: { bau: 3, not: 10 }, normal: { bau: 5, not: 15 }, high: { bau: 8, not: 20 } };
@@ -1032,7 +1041,7 @@ function canBuyEntranceNow(st) {
 }
 // Statistik je Spieler (für Rückblick und Endauswertung)
 function stats(st) {
-  if (!st.stats) st.stats = st.players.map(() => ({ stayIn: 0, stayOut: 0, bestStay: 0, nights: 0, bank: 0, builds: 0, interest: 0, saved: 0, hotelIncome: {}, permits: { gruen: 0, rot: 0, H: 0, 2: 0 } }));
+  if (!st.stats) st.stats = st.players.map(() => ({ stayIn: 0, stayOut: 0, bestStay: 0, nights: 0, bank: 0, builds: 0, interest: 0, saved: 0, hotelIncome: {}, permits: { gruen: 0, rot: 0, H: 0, 2: 0 }, laps: 0 }));
   for (const s of st.stats) { if (!s.hotelIncome) s.hotelIncome = {}; if (!s.permits) s.permits = { gruen: 0, rot: 0, H: 0, 2: 0 }; }
   if (!st.records) st.records = { bigBill: null };
   return st.stats;
@@ -1155,7 +1164,7 @@ function drawCard(st) {
       const full = ownedHotels(st, st.cur).filter(h => st.hotels[h].stage === maxStage(h)).sort((a, b) => HOTELS[b].fac - HOTELS[a].fac);
       if (!full.length) { log(st, 'Sturm: Glück gehabt, keine Freizeitanlage beschädigt.'); return false; }
       const amt = round50(HOTELS[full[0]].fac / 2);
-      log(st, `Sturm: Die ${HOTELS[full[0]].facName} im ${HOTELS[full[0]].name} muss für ${fmt(amt)} repariert werden.`, 'bad');
+      log(st, `Sturm: Die ${HOTELS[full[0]].facName} ${inH(full[0])} muss für ${fmt(amt)} repariert werden.`, 'bad');
       return charge(st, amt, null, 'Sturmschaden');
     }
     case 'rohr':
@@ -1316,6 +1325,7 @@ function moveBy(st, steps0, byCard) {
     accrue(st, st.cur, steps - bankAt);
   } else accrue(st, st.cur, steps);
   if (bank) {
+    stats(st)[st.cur].laps = (stats(st)[st.cur].laps || 0) + 1;
     const stopped = rulesOf(st).endBank === 'classic' && st.initialCount >= 3 && activePlayers(st).length <= 2;
     if (stopped) log(st, 'Bank-Linie: Im Endspiel zu zweit zahlt die Bank nichts mehr.');
     else {
@@ -1641,7 +1651,7 @@ function enterBauzwang(st) {
   const p = st.players[st.cur], bz = st.bz;
   st.phase = 'bauzwang';
   st.data = null;
-  st.prompt = `Doppelter Preis: ${fmt(bz.cost)} für ${bz.what} im ${HOTELS[bz.hotel].name}. Es fehlen ${fmt(bz.cost - p.cash)}.`;
+  st.prompt = `Doppelter Preis: ${fmt(bz.cost)} für ${bz.what} ${inH(bz.hotel)}. Es fehlen ${fmt(bz.cost - p.cash)}.`;
 }
 function checkBauzwang(st) {
   const p = st.players[st.cur], bz = st.bz;
@@ -1656,7 +1666,7 @@ function checkBauzwang(st) {
     p.cash -= bz.cost;
     st.hotels[bz.hotel].stage += bz.count;
     stats(st)[st.cur].builds += bz.count;
-    log(st, `${p.name} zahlt den doppelten Preis von ${fmt(bz.cost)} und baut ${bz.what} im ${HOTELS[bz.hotel].name}.`, 'build');
+    log(st, `${p.name} zahlt den doppelten Preis von ${fmt(bz.cost)} und baut ${bz.what} ${inH(bz.hotel)}.`, 'build');
     st.bz = null;
     afterSaleSecure(st);
     return proceed(st);
@@ -1782,7 +1792,7 @@ function resolvePermit(st) {
   st.event = { kind: 'permit', face };
   const what = count === 1 ? stageName(h, hs.stage + 1) : `${count} Gebäude`;
   if (face === 'rot') {
-    log(st, `Abgelehnt! Kein Bau im ${HOTELS[h].name}.`, 'bad');
+    log(st, `Abgelehnt! Kein Bau ${inH(h)}.`, 'bad');
     return proceed(st);
   }
   if (face === 'gruen' || face === 'H') {
@@ -1791,9 +1801,9 @@ function resolvePermit(st) {
     hs.stage += count;
     stats(st)[st.cur].builds += count;
     log(st, face === 'gruen'
-      ? `Genehmigt! ${p.name} baut ${what} im ${HOTELS[h].name} für ${fmt(cost)}.`
-      : cost ? `Halber Preis! ${p.name} baut ${what} im ${HOTELS[h].name} für ${fmt(cost)}.`
-        : `H wie Hotel: ${p.name} baut ${what} im ${HOTELS[h].name} kostenlos!`, 'build');
+      ? `Genehmigt! ${p.name} baut ${what} ${inH(h)} für ${fmt(cost)}.`
+      : cost ? `Halber Preis! ${p.name} baut ${what} ${inH(h)} für ${fmt(cost)}.`
+        : `H wie Hotel: ${p.name} baut ${what} ${inH(h)} kostenlos!`, 'build');
     return proceed(st);
   }
   // Doppelter Preis
@@ -1809,7 +1819,7 @@ function resolvePermit(st) {
     return proceed(st);
   }
   st.bz = { hotel: h, count, cost, list, what };
-  log(st, `Doppelter Preis! ${what} im ${HOTELS[h].name} kostet jetzt ${fmt(cost)}.`, 'bad');
+  log(st, `Doppelter Preis! ${what} ${inH(h)} kostet jetzt ${fmt(cost)}.`, 'bad');
   checkBauzwang(st);
 }
 
@@ -1857,7 +1867,7 @@ function act(st0, a) {
       let amount = n * nightRate(st, h) * mult;
       const boost = st.players[owner].adBoost;
       if (boost) { amount *= 2; st.players[owner].adBoost = false; }
-      const t = `${p.name} bleibt ${n} ${n === 1 ? 'Nacht' : 'Nächte'} im ${HOTELS[h].name} und zahlt ${fmt(amount)} an ${pname(st, owner)}${boost ? ' (Werbekampagne: doppelt)' : ''}.`;
+      const t = `${p.name} bleibt ${n} ${n === 1 ? 'Nacht' : 'Nächte'} ${inH(h)} und zahlt ${fmt(amount)} an ${pname(st, owner)}${boost ? ' (Werbekampagne: doppelt)' : ''}.`;
       log(st, t, 'pay');
       st.event = { kind: 'nights', n, amount, hotel: h, owner };
       const S2 = stats(st);
@@ -1924,7 +1934,7 @@ function act(st0, a) {
       if (R.permitRoll === 'manual' && !p.ai && R.permit !== 'always' && !p.permitVoucher) {
         st.phase = 'permitRoll';
         st.data = { hotel: h, count, list };
-        st.prompt = `Bauantrag für ${count === 1 ? stageName(h, hs.stage + 1) : count + ' Gebäude'} im ${HOTELS[h].name}. Wirf den Baustein-Würfel!`;
+        st.prompt = `Bauantrag für ${count === 1 ? stageName(h, hs.stage + 1) : count + ' Gebäude'} ${inH(h)}. Wirf den Baustein-Würfel!`;
         break;
       }
       resolvePermit(st);
@@ -1941,7 +1951,7 @@ function act(st0, a) {
       payBuild(st, cost, list);
       st.hotels[h].stage += count;
       stats(st)[st.cur].builds += count;
-      log(st, `${p.name} zahlt den doppelten Preis von ${fmt(cost)} und baut im ${HOTELS[h].name}.`, 'build');
+      log(st, `${p.name} zahlt den doppelten Preis von ${fmt(cost)} und baut ${inH(h)}.`, 'build');
       proceed(st);
       break;
     }
@@ -1958,7 +1968,7 @@ function act(st0, a) {
       payBuild(st, HOTELS[h].fac, HOTELS[h].fac);
       st.hotels[h].stage += 1;
       stats(st)[st.cur].builds += 1;
-      log(st, `${p.name} errichtet ${HOTELS[h].facName} im ${HOTELS[h].name} für ${fmt(HOTELS[h].fac)}.`, 'build');
+      log(st, `${p.name} errichtet ${HOTELS[h].facName} ${inH(h)} für ${fmt(HOTELS[h].fac)}.`, 'build');
       proceed(st);
       break;
     }
@@ -1968,7 +1978,7 @@ function act(st0, a) {
       if (!st.data.hotels.includes(h)) throw new Error('Nicht möglich');
       st.hotels[h].stage += 1;
       stats(st)[st.cur].builds += 1;
-      log(st, `${p.name} baut gratis: ${stageName(h, st.hotels[h].stage)} im ${HOTELS[h].name}.`, 'build');
+      log(st, `${p.name} baut gratis: ${stageName(h, st.hotels[h].stage)} ${inH(h)}.`, 'build');
       proceed(st);
       break;
     }
@@ -1982,7 +1992,7 @@ function act(st0, a) {
       payBuild(st, cost, list);
       st.hotels[h].stage += 1;
       stats(st)[st.cur].builds += 1;
-      log(st, `${p.name} baut zum halben Preis: ${stageName(h, st.hotels[h].stage)} im ${HOTELS[h].name} für ${fmt(cost)}.`, 'build');
+      log(st, `${p.name} baut zum halben Preis: ${stageName(h, st.hotels[h].stage)} ${inH(h)} für ${fmt(cost)}.`, 'build');
       proceed(st);
       break;
     }
@@ -2401,7 +2411,7 @@ if (typeof module !== 'undefined') module.exports = {
   HOTELS, PENSIONS, SPACES, PLOTS, BOARD_W, BOARD_D, BOARD_LEN, TOWNHALL, BUILD_DIE, RESERVED_OF, CARDS, newGame, act, aiAction, actor,
   netWorth, invested, maxStage, buildingStages, stageCost, stageName, rate, costRange, entranceAt, entranceSpaces,
   bankPrice, auctionMin, halfLand, creditLimit, creditRoom, debtOf, assets, interestDue,
-  setRateFactor: f => (RATE_FACTOR = f), DEFAULT_RULES,
+  setRateFactor: f => (RATE_FACTOR = f), DEFAULT_RULES, inH,
   owedInterest, payoffAmount, lapInterest, savingsTiers, SAVINGS_TIERS, BREAK_FEE, SEASONS, seasonIdx, seasonFactor, nightRate, seasonLeft,
   PERSONAS, PERSONA_KEYS, migrate, LAND_P, depositOpen,
 };
@@ -2578,6 +2588,7 @@ function initRenderer() {
 // ---------------- Texturen ----------------
 const MAX_ANISO = () => Math.min(16, renderer.capabilities.getMaxAnisotropy());
 // Zeichnet in logischen Maßen w x h; die Leinwand ist bei hoher Qualität doppelt so fein
+const OWN_TEX = new WeakSet();   // selbst gemalte Texturen, die beim Abriss freigegeben werden dürfen
 function canvasTex(w, h, draw, repeat = false) {
   const c = document.createElement('canvas');
   const k = Math.max(1, Math.min(TEX_SCALE, Math.floor(2048 / Math.max(w, h)) || 1));
@@ -2586,6 +2597,7 @@ function canvasTex(w, h, draw, repeat = false) {
   ctx.scale(k, k);
   draw(ctx, w, h);
   const t = new T.CanvasTexture(c);
+  OWN_TEX.add(t);
   t.encoding = T.sRGBEncoding;
   t.anisotropy = MAX_ANISO();
   if (repeat) t.wrapS = t.wrapT = T.RepeatWrapping;
@@ -3925,38 +3937,70 @@ function updateCamera(dt) {
 }
 const ptr = { down: false, btn: 0, x: 0, y: 0, sx: 0, sy: 0, moved: false, nx: 0, ny: 0, inside: false, dirty: true };
 canvasEl.addEventListener('contextmenu', e => e.preventDefault());
-canvasEl.addEventListener('pointerdown', e => {
-  ptr.down = true; ptr.btn = e.button; ptr.x = ptr.sx = e.clientX; ptr.y = ptr.sy = e.clientY; ptr.moved = false;
-  canvasEl.setPointerCapture(e.pointerId);
-  sfx.unlock();
-});
-canvasEl.addEventListener('pointermove', e => {
+// Finger auf Tablet und Handy: einer dreht, zwei zoomen (auseinanderziehen) und verschieben
+const touches = new Map();
+const pinchInfo = () => { const [a, b] = [...touches.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; };
+function ptrAim(e) {
   const rect = canvasEl.getBoundingClientRect();
   ptr.nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   ptr.ny = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   ptr.inside = true; ptr.dirty = true;
+}
+function panBy(dx, dy) {
+  const d = camState.des, s = d.r * 0.0017;
+  const cos = Math.cos(d.theta), sin = Math.sin(d.theta);
+  d.tx = clamp(d.tx + (-cos * dx - sin * dy * 1.3) * s, -7 * K, 7 * K);
+  d.tz = clamp(d.tz + (sin * dx - cos * dy * 1.3) * s, -6 * K, 6 * K);
+}
+canvasEl.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'touch') touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  ptrAim(e);   // ein Tippen ohne vorherige Bewegung trifft sonst die alte Stelle
+  try { canvasEl.setPointerCapture(e.pointerId); } catch (err) { /* egal */ }
+  sfx.unlock();
+  if (touches.size >= 2) { ptr.pinch = pinchInfo(); ptr.moved = true; return; }
+  ptr.down = true; ptr.btn = e.button; ptr.x = ptr.sx = e.clientX; ptr.y = ptr.sy = e.clientY; ptr.moved = false;
+});
+canvasEl.addEventListener('pointermove', e => {
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (touches.size >= 2 && ptr.pinch) {
+    const now = pinchInfo(), was = ptr.pinch;
+    camState.userZoomed = true;
+    camState.des.r = clamp(camState.des.r * (was.d / now.d), 6, 40 * K);
+    panBy(now.mx - was.mx, now.my - was.my);
+    ptr.pinch = now;
+    return;
+  }
+  ptrAim(e);
   if (!ptr.down) return;
   const dx = e.clientX - ptr.x, dy = e.clientY - ptr.y;
   ptr.x = e.clientX; ptr.y = e.clientY;
-  if (Math.abs(e.clientX - ptr.sx) + Math.abs(e.clientY - ptr.sy) > 5) ptr.moved = true;
+  if (Math.abs(e.clientX - ptr.sx) + Math.abs(e.clientY - ptr.sy) > (e.pointerType === 'touch' ? 10 : 5)) ptr.moved = true;
   if (!ptr.moved) return;
   canvasEl.classList.add('grab');
   const d = camState.des;
-  if (ptr.btn === 2 || e.shiftKey) {
-    const s = d.r * 0.0017;
-    const cos = Math.cos(d.theta), sin = Math.sin(d.theta);
-    d.tx = clamp(d.tx + (-cos * dx - sin * dy * 1.3) * s, -7 * K, 7 * K);
-    d.tz = clamp(d.tz + (sin * dx - cos * dy * 1.3) * s, -6 * K, 6 * K);
-  } else {
+  if (ptr.btn === 2 || e.shiftKey) panBy(dx, dy);
+  else {
     d.theta -= dx * 0.0055;
     d.phi = clamp(d.phi - dy * 0.0045, 0.05, 1.32);
   }
 });
-canvasEl.addEventListener('pointerup', e => {
+function ptrEnd(e, cancel) {
+  const wasPinch = touches.size >= 2;
+  touches.delete(e.pointerId);
+  if (wasPinch) {
+    ptr.pinch = null;
+    // der verbliebene Finger dreht ab hier weiter, ohne Sprung
+    const rest = [...touches.values()][0];
+    if (rest) { ptr.down = true; ptr.btn = 0; ptr.x = ptr.sx = rest.x; ptr.y = ptr.sy = rest.y; ptr.moved = true; }
+    else ptr.down = false;
+    return;
+  }
   canvasEl.classList.remove('grab');
   ptr.down = false;
-  if (!ptr.moved && e.button === 0) onSceneClick();
-});
+  if (!cancel && !ptr.moved && e.button === 0) onSceneClick();
+}
+canvasEl.addEventListener('pointerup', e => ptrEnd(e, false));
+canvasEl.addEventListener('pointercancel', e => ptrEnd(e, true));
 canvasEl.addEventListener('pointerleave', () => { ptr.inside = false; ptr.dirty = true; });
 canvasEl.addEventListener('wheel', e => {
   e.preventDefault();
@@ -4074,7 +4118,7 @@ async function lowerPart(h, stage, animate) {
     puff(s.x, 0.2, s.z, '#9a8f80', 14, 0.8);
     await tween(D(450), t => { g.scale.y = Math.max(0.01, 1 - t); }, linear);
   }
-  V.grp.remove(g);
+  retire([g]);
   V.ghosts[stage - 1].visible = true;
   markShadows();
 }
@@ -4099,7 +4143,7 @@ async function syncScene(animate = true, cinematic = false) {
     for (const sp of V.ents.slice()) {
       if (!hs.ents.includes(sp)) {
         const g = W3.gates[sp];
-        if (g) { scene.remove(g); delete W3.gates[sp]; }
+        if (g) { retire([g]); delete W3.gates[sp]; }
         V.ents = V.ents.filter(x => x !== sp);
         if (W3.stars[sp]) W3.stars[sp].visible = true;
       }
@@ -4136,16 +4180,54 @@ async function syncScene(animate = true, cinematic = false) {
   }
   for (const j of jobs) await j();
 }
+// Entfernte Bauteile richtig freigeben: Grafikspeicher und Listen wuchsen sonst mit jedem Neustart, Laden oder Abriss
+const TEX_KEYS = ['map', 'emissiveMap', 'normalMap', 'roughnessMap', 'metalnessMap', 'alphaMap', 'bumpMap', 'aoMap'];
+function retire(roots) {
+  roots = roots.filter(Boolean);
+  if (!roots.length) return;
+  const objs = new Set(), mats = new Set(), geos = new Set();
+  for (const r of roots) {
+    if (r.parent) r.parent.remove(r);
+    r.traverse(o => {
+      objs.add(o);
+      if (o.geometry) geos.add(o.geometry);
+      if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m && mats.add(m));
+    });
+  }
+  const cut = (arr, test) => { for (let i = arr.length - 1; i >= 0; i--) if (test(arr[i])) arr.splice(i, 1); };
+  cut(waterMeshes, o => objs.has(o));
+  cut(blinkers, o => objs.has(o));
+  cut(W3.headlights, m => mats.has(m));
+  cut(W3.gateLamps, m => mats.has(m));
+  cut(W3.nightSigns, x => mats.has(x.m));
+  cut(W3.pickRoots, o => objs.has(o));
+  // Was noch irgendwo im Bild hängt, bleibt
+  const liveGeo = new Set(), liveMat = new Set(), liveTex = new Set();
+  scene.traverse(o => {
+    if (o.geometry) liveGeo.add(o.geometry);
+    if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m && liveMat.add(m));
+  });
+  liveMat.forEach(m => TEX_KEYS.forEach(k => { if (m[k]) liveTex.add(m[k]); }));
+  const cached = new Set(Object.values(matCache));
+  geos.forEach(g => { if (!liveGeo.has(g)) g.dispose(); });
+  mats.forEach(m => {
+    if (liveMat.has(m) || cached.has(m) || DYN_MATS.has(m)) return;
+    TEX_KEYS.forEach(k => { const t = m[k]; if (t && !liveTex.has(t) && OWN_TEX.has(t)) t.dispose(); });
+    m.dispose();
+  });
+}
 function resetScene() {
+  const old = [];
   for (let h = 0; h < 8; h++) {
     const V = W3.plots[h];
-    for (let s = V.parts.length; s >= 1; s--) if (V.parts[s - 1]) { V.grp.remove(V.parts[s - 1]); V.parts[s - 1] = null; }
+    for (let s = V.parts.length; s >= 1; s--) if (V.parts[s - 1]) { old.push(V.parts[s - 1]); V.parts[s - 1] = null; }
     V.ghosts.forEach(g => (g.visible = true));
     V.stage = 0;
-    for (const sp of V.ents) { if (W3.gates[sp]) scene.remove(W3.gates[sp]); delete W3.gates[sp]; if (W3.stars[sp]) W3.stars[sp].visible = true; }
+    for (const sp of V.ents) { if (W3.gates[sp]) old.push(W3.gates[sp]); delete W3.gates[sp]; if (W3.stars[sp]) W3.stars[sp].visible = true; }
     V.ents = [];
     V.owner = undefined;
   }
+  retire(old);
   W3.smoke = [];
   placeCars();
 }
@@ -4167,7 +4249,7 @@ function showPreview(h, from, count) {
   scene.add(linearize(g));
   view.preview = g;
 }
-function clearPreview() { if (view.preview) { scene.remove(view.preview); view.preview = null; } view.previewHotel = null; }
+function clearPreview() { if (view.preview) { retire([view.preview]); view.preview = null; } view.previewHotel = null; }
 
 // Hervorhebungen je Spielphase
 function updateHighlights() {
@@ -4754,10 +4836,10 @@ function stageLabel(h) {
   return s === 0 ? 'unbebaut' : s === maxStage(h) ? 'voll ausgebaut' : `bis ${stageName(h, s)}`;
 }
 function renderTurn() {
-  const st = S, who = actor(st), P = st.players[who];
+  const st = S, who = st.phase === 'over' && st.winner != null ? st.winner : actor(st), P = st.players[who];
   $('turn').style.setProperty('--pc', P.color);
   const human = localHuman(who);
-  let html = `<div class="thead">${P.ai && PERSONAS[P.persona] ? `<span class="tav">${avatarSVG(P.persona, 26)}</span>` : '<span class="tdot"></span>'}<span class="tname">${esc(P.name)}</span><span class="tsub">${st.phase === 'auction' ? 'bietet' : P.ai ? esc(personaTag(P) || 'Computer') : 'am Zug'}</span></div>`;
+  let html = `<div class="thead">${P.ai && PERSONAS[P.persona] ? `<span class="tav">${avatarSVG(P.persona, 26)}</span>` : '<span class="tdot"></span>'}<span class="tname">${esc(P.name)}</span><span class="tsub">${st.phase === 'over' ? 'gewinnt' : st.phase === 'auction' ? 'bietet' : P.out ? 'pleite' : P.ai ? esc(personaTag(P) || 'Computer') : 'am Zug'}</span></div>`;
   if (view.busy || NET.pending) { $('turn-body').innerHTML = html + `<p class="prompt" style="color:var(--muted)">…</p>`; return; }
   html += `<p class="prompt">${esc(st.prompt)}</p>`;
   if (human) html += hintHTML(st);
@@ -4869,7 +4951,8 @@ function renderTurn() {
         <div class="btns" style="margin-top:10px">${steps.map(v => `<button class="btn" data-act="bid" data-amount="${v}"><span>Bieten</span><span class="price">${fmt(v)}</span></button>`).join('')}<button class="btn quiet" data-act="pass">Aussteigen</button></div>`;
       break;
     }
-    case 'done': c = `${depositOpen(st) ? depositStrip(st) : ''}<div class="btns"><button class="btn primary" data-act="endTurn" data-primary>Zug beenden <kbd>Leertaste</kbd></button>${anytimeEntranceBtn(st)}${bankBtn(st)}${undoBtn()}</div>`; break;
+    case 'done': c = P.out ? `<div class="btns"><button class="btn primary" data-act="endTurn" data-primary>Weiter <kbd>Leertaste</kbd></button></div>`
+      : `${depositOpen(st) ? depositStrip(st) : ''}<div class="btns"><button class="btn primary" data-act="endTurn" data-primary>Zug beenden <kbd>Leertaste</kbd></button>${anytimeEntranceBtn(st)}${bankBtn(st)}${undoBtn()}</div>`; break;
   }
   if (human && !['roll', 'done', 'over'].includes(st.phase) && undoBtn()) c += `<div class="btns" style="margin-top:8px">${undoBtn()}</div>`;
   const lines = st.log.filter(l => l.turn === st.turn && l.k !== 'sys').slice(-6);
@@ -4926,6 +5009,8 @@ function renderHUD() {
 // ---------------- Ablauf ----------------
 async function animateCar(pi, from, steps) {
   const car = W3.cars[pi];
+  // Lange Fahrten (Ereigniskarte zum Rathaus, Abkürzung) zügiger, damit niemand ewig zuschaut
+  const per = Math.max(80, Math.min(230, 3200 / Math.max(1, steps)));
   for (let k = 1; k <= steps; k++) {
     const a = SPACES[(from + k - 1) % BOARD_LEN], b = SPACES[(from + k) % BOARD_LEN];
     const p0 = car.position.clone();
@@ -4936,7 +5021,7 @@ async function animateCar(pi, from, steps) {
     while (dy < -Math.PI) dy += Math.PI * 2;
     sfx.step();
     if (settings.follow) Object.assign(camState.des, { tx: lerp(camState.des.tx, p1.x, 0.5), tz: lerp(camState.des.tz, p1.z, 0.5) });
-    await tween(D(230), (e, t) => {
+    await tween(D(per), (e, t) => {
       car.position.lerpVectors(p0, p1, e);
       car.position.y = 0.08 + Math.sin(t * Math.PI) * 0.06;
       car.rotation.y = y0 + dy * Math.min(1, t * 1.8);
@@ -4955,6 +5040,9 @@ async function applyAction(a) {
   clearPreview();
   hideTip();
   view.busy = true;
+  // Wird mitten in der Animation ein anderes Spiel geladen oder neu gestartet, bricht dieser Zug still ab
+  const gen = view.gen;
+  const w = async pr => { const r = await pr; if (view.gen !== gen) throw STALE; return r; };
   S = next;
   trackUndo(prev, next, a);
   netAfterAct(prev, a);
@@ -4963,38 +5051,38 @@ async function applyAction(a) {
   updateHighlights();
   try {
     if (a.type === 'roll') {
-      await rollTray('move', S.dice.move);
+      await w(rollTray('move', S.dice.move));
       syncTray();
-      await animateCar(prev.cur, S.lastMove.from, S.lastMove.steps);
+      await w(animateCar(prev.cur, S.lastMove.from, S.lastMove.steps));
       const passedBank = S.lastMove.from + S.lastMove.steps >= BOARD_LEN;
-      if (passedBank && S.stats[prev.cur].bank > prev.stats[prev.cur].bank) { sfx.coin(); await bankCoins(prev.cur); }
+      if (passedBank && S.stats[prev.cur].bank > prev.stats[prev.cur].bank) { sfx.coin(); await w(bankCoins(prev.cur)); }
     } else if (a.type === 'rollNights') {
-      await rollTray('move', S.dice.nights);
+      await w(rollTray('move', S.dice.nights));
       syncTray();
       const col = prev.data.pension !== undefined ? PENSIONS[prev.data.pension].color : HOTELS[prev.data.hotel].color;
       banner(`${S.dice.nights} ${S.dice.nights === 1 ? 'Nacht' : 'Nächte'}`, fmt(S.event?.amount || 0), col);
       sfx.pay();
-      await stayAnimation(prev, S.dice.nights, S.event?.amount || 0);
+      await w(stayAnimation(prev, S.dice.nights, S.event?.amount || 0));
     } else if ((a.type === 'applyPermit' && S.phase !== 'permitRoll') || a.type === 'rollPermit') {
-      await rollTray('build', S.dice.build);
+      await w(rollTray('build', S.dice.build));
       syncTray();
       const f = S.dice.build;
       const hFree = rulesOf(S).hFace !== 'half';
       const info = { gruen: ['Genehmigt!', '#7be3a6'], rot: ['Abgelehnt', '#ff6b6b'], H: [hFree ? 'H wie Hotel!' : 'Halber Preis!', '#6aa8ff'], '2': ['Doppelter Preis', '#ffb347'] }[f];
       banner(info[0], f === 'H' && hFree ? 'kostenlos bauen' : S.phase === 'bauzwang' ? 'Bauzwang' : '', info[1]);
       if (f === 'rot' || f === '2') sfx.deny();
-      await sleep(D(350));
+      await w(sleep(D(350)));
     } else if (a.type === 'buyLand') {
       sfx.pay();
-      await buyCoins(prev, a.hotel);
+      await w(buyCoins(prev, a.hotel));
     }
     // Ereigniskarte und Fahrt durch eine Karte
     if ((S.cardCount || 0) > (prev.cardCount || 0) && S.lastCard) {
-      await showCard(CARDS.find(c => c.id === S.lastCard.id), localHuman(S.lastCard.player));
+      await w(showCard(CARDS.find(c => c.id === S.lastCard.id), localHuman(S.lastCard.player)));
       const m2 = S.lastMove2;
       if (m2 && m2.n === S.cardCount) {
-        await animateCar(m2.player, m2.from, m2.steps);
-        if (m2.from + m2.steps >= BOARD_LEN && S.stats[m2.player].bank > prev.stats[m2.player].bank) { sfx.coin(); await bankCoins(m2.player); }
+        await w(animateCar(m2.player, m2.from, m2.steps));
+        if (m2.from + m2.steps >= BOARD_LEN && S.stats[m2.player].bank > prev.stats[m2.player].bank) { sfx.coin(); await w(bankCoins(m2.player)); }
       }
     }
     const fresh = newLogEntries(prev, S);
@@ -5008,7 +5096,7 @@ async function applyAction(a) {
     maybeQuip(prev, S, a);
     moneyPops(prev);
     if (prev.players.some((p, i) => p.cash < S.players[i].cash && i !== prev.cur)) sfx.coin();
-    await syncScene(true, true);
+    await w(syncScene(true, true));
     if (S.event?.kind === 'bankrupt') { banner('Pleite!', S.players[S.event.player].name, '#ff6b6b'); sfx.deny(); placeCars(); }
     if (S.phase === 'auction' && S.auction.bank && !(prev.phase === 'auction' && prev.auction && prev.auction.bank)) {
       banner('Versteigerung!', `${HOTELS[S.auction.hotel].name} · ab ${fmt(S.auction.min)}`, HOTELS[S.auction.hotel].color);
@@ -5021,8 +5109,11 @@ async function applyAction(a) {
       const car = W3.cars[S.cur];
       if (car) Object.assign(camState.des, { tx: car.position.x * 0.5, tz: car.position.z * 0.5 });
     }
+  } catch (e) {
+    if (e === STALE) return false;
+    throw e;
   } finally {
-    view.busy = false;
+    if (view.gen === gen) view.busy = false;
   }
   save();
   renderHUD();
@@ -5030,12 +5121,14 @@ async function applyAction(a) {
   if (netIsHost()) netHostPump();
   return true;
 }
+const STALE = { stale: true };
 function schedule() {
   clearTimeout(view.aiTimer); clearTimeout(view.endTimer);
   if (!S || S.phase === 'over' || view.busy || view.paused || view.stopped || $('modal').innerHTML) return;
   const who = actor(S), P = S.players[who];
   if (P.ai) { if (netRunsAI()) view.aiTimer = later(() => { if (view.menu || view.paused || view.busy || $('modal').innerHTML) return; const a = aiAction(S); if (a) dispatch(a); }, D(S.phase === 'done' ? 650 : 850)); return; }
   if (!localHuman(who)) return;   // ein Mitspieler an einem anderen PC ist am Zug
+  if (P.out && S.phase === 'done') { view.endTimer = setTimeout(() => dispatch({ type: 'endTurn' }), D(2200)); return; }
   if (maybeRecap()) return;
   if (S.phase === 'done' && settings.autoEnd) view.endTimer = setTimeout(() => dispatch({ type: 'endTurn' }), 1500);
 }
@@ -5145,7 +5238,7 @@ function syncToolButtons() {
   document.querySelector('[data-tool=follow]').setAttribute('aria-pressed', settings.follow);
   document.querySelector('[data-tool=sound]').setAttribute('aria-pressed', settings.sound);
   document.querySelector('[data-tool=music]').setAttribute('aria-pressed', settings.music);
-  document.querySelector('[data-tool=fullscreen]').setAttribute('aria-pressed', !!document.fullscreenElement);
+  document.querySelector('[data-tool=fullscreen]').setAttribute('aria-pressed', !!fsElement());
 }
 
 // ---------------- Dialoge ----------------
@@ -5247,7 +5340,7 @@ function openSetup(first = false, keep = null) {
       // Name folgt dem Charakter, solange er nicht selbst vergeben wurde
       const isDefault = !row.name || PERSONA_KEYS.some(k => PERSONAS[k].name === row.name) || /^Spieler \d$/.test(row.name);
       if (isDefault && PERSONAS[row.persona]) row.name = PERSONAS[row.persona].name;
-      if (was !== row.persona) draw();
+      if (was !== row.persona) drawAll();
     }
   };
   $('modal').onclick = e => {
@@ -5338,6 +5431,10 @@ function resolveSeats(players) {
     }
     const isDefault = !p.name || PERSONA_KEYS.some(k => PERSONAS[k].name === p.name) || /^Spieler \d$/.test(p.name);
     return { ...p, persona, level: p.level || 'normal', name: isDefault ? PERSONAS[persona].name : p.name };
+  }).map((p, i, all) => {
+    // Gleiche Namen unterscheidbar machen, sonst ist das Protokoll nicht mehr lesbar
+    const same = all.filter((q, k) => k < i && q.name === p.name).length;
+    return same ? { ...p, name: `${p.name} ${same + 1}` } : p;
   });
 }
 function startGame() {
@@ -5358,9 +5455,11 @@ function startGame() {
 function restore() {
   if (view.menu) setMenu(false);
   view.boardEmpty = false;
+  view.gen = (view.gen || 0) + 1;
   view.sel = null; view.entHotel = null; view.busy = false;
+  document.querySelectorAll('.evcard').forEach(el => el.remove());
   cashShown.length = 0;
-  W3.cars.forEach(c => { if (c) { scene.remove(c); W3.pickRoots = W3.pickRoots.filter(o => o !== c); } });
+  retire(W3.cars);
   W3.cars = [];
   resetScene();
   syncScene(false);
@@ -5446,6 +5545,7 @@ function openRules() {
       <li><b>Hinweise beim ersten Mal</b> erklären neue Lagen kurz. Unter Darstellung & Ton lassen sie sich zurücksetzen.</li>
       <li><b>Zug zurücknehmen</b> (Taste Z): ${R.undo === 'off' ? 'gerade ausgeschaltet, einschaltbar unter Spielhilfen.' : R.undo === 'roll' ? 'Entscheidungen seit dem letzten Würfelwurf.' : 'alles im eigenen Zug.'}</li>
       <li><b>Protokoll</b> (P) zeigt alles Geschehene und pausiert das Spiel.</li>
+      <li><b>Partie beenden</b> (Knopf oben rechts): „Zum Hauptmenü“ beendet nur die laufende Partie, „Spiel schließen“ das ganze Spiel. Gespeichert wird in beiden Fällen.</li>
       <li><b>Grafik</b> (Darstellung & Ton): Leuchtreklamen, das Leben auf dem Brett und der Miniatur-Effekt lassen sich einzeln an- und abschalten. Ruckelt es, hilft eine niedrigere Grafikqualität.</li>
       <li><b>Würfelgeräusch</b> (Darstellung & Ton): Holztisch, Würfelbecher, Filz, Klassisch oder Aus. Ein Klick spielt es zur Probe ab.</li></ul>`)}
     ${sec('online', 'Online spielen', `<ul><li>Im Startmenü öffnet der <b>Gastgeber</b> einen Raum und bekommt einen Code aus fünf Zeichen. Plätze für Mitspieler stellt er auf „Online“.</li>
@@ -5484,6 +5584,7 @@ async function boot(data) {
   applyQuality();
   window.addEventListener('resize', resize);
   new ResizeObserver(resize).observe($('stage'));
+  try { if (matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches) document.querySelector('.camhint').textContent = 'Ein Finger dreht · zwei Finger zoomen und verschieben · Tippen wählt aus'; } catch (e) { /* egal */ }
   const saved = data && data.S ? data : load();
   if (saved && saved.S && (saved.S.v === 5 || saved.S.v === 6)) {
     S = migrate(saved.S); settings = { ...settings, ...saved.settings }; lastSetup = saved.lastSetup; NET.saved = saved.net || null;
@@ -5500,6 +5601,7 @@ async function boot(data) {
   renderHUD();
   requestAnimationFrame(t => { lastT = t; frame(t); });
   document.addEventListener('fullscreenchange', () => { syncToolButtons(); });
+  document.addEventListener('webkitfullscreenchange', () => { syncToolButtons(); });
   window.__booted = true;
   $('loading').style.opacity = 0;
   setTimeout(() => $('loading').remove(), 600);
@@ -6778,11 +6880,11 @@ function awardsHTML(st) {
   sts.forEach((s, i) => Object.entries(s.hotelIncome || {}).forEach(([h, v]) => { if (v > 0 && (!bh || v > bh.v)) bh = { i, h: +h, v }; }));
   if (bh) out.push({ ic: 'hotel', t: 'Bestes Hotel', who: bh.i, line: `${HOTELS[bh.h].name}`, val: `${fmt(bh.v)} eingenommen` });
   const bb = st.records && st.records.bigBill;
-  if (bb) out.push({ ic: 'bill', t: 'Teuerste Rechnung', who: bb.payer, line: `${bb.nights} ${bb.nights === 1 ? 'Nacht' : 'Nächte'} im ${HOTELS[bb.hotel].name} (Gastgeber: ${P(bb.owner).name})`, val: fmt(bb.amount) });
+  if (bb) out.push({ ic: 'bill', t: 'Teuerste Rechnung', who: bb.payer, line: `${bb.nights} ${bb.nights === 1 ? 'Nacht' : 'Nächte'} ${inH(bb.hotel)} (Gastgeber: ${P(bb.owner).name})`, val: fmt(bb.amount) });
   const host = best(s => s.nights || 0);
-  if (host) out.push({ ic: 'host', t: 'Gastgeber', who: host.i, line: 'die meisten Gäste-Nächte', val: `${host.v} Nächte` });
+  if (host) out.push({ ic: 'host', t: 'Gastgeber', who: host.i, line: 'die meisten Gäste-Nächte', val: `${host.v} ${host.v === 1 ? 'Nacht' : 'Nächte'}` });
   const bau = best(s => s.builds || 0);
-  if (bau) out.push({ ic: 'build', t: 'Baumeister', who: bau.i, line: 'am meisten gebaut', val: `${bau.v} Bauabschnitte` });
+  if (bau) out.push({ ic: 'build', t: 'Baumeister', who: bau.i, line: 'am meisten gebaut', val: `${bau.v} ${bau.v === 1 ? 'Bauabschnitt' : 'Bauabschnitte'}` });
   const luck = best(s => (s.permits && s.permits.H) || 0);
   if (luck) out.push({ ic: 'luck', t: 'Glückspilz', who: luck.i, line: 'H wie Hotel gewürfelt', val: `${luck.v}-mal kostenlos gebaut` });
   const pech = best(s => (s.permits && (s.permits.rot + s.permits[2])) || 0);
@@ -6791,8 +6893,8 @@ function awardsHTML(st) {
   if (zins) out.push({ ic: 'interest', t: 'Bester Kunde der Bank', who: zins.i, line: 'die meisten Zinsen gezahlt', val: fmt(zins.v) });
   const spar = best(s => s.saved || 0);
   if (spar) out.push({ ic: 'save', t: 'Sparfuchs', who: spar.i, line: 'Festgeld-Zinsen kassiert', val: fmt(spar.v) });
-  const lap = best(s => Math.round((s.bank || 0) / BANK_BONUS));
-  if (lap) out.push({ ic: 'lap', t: 'Vielfahrer', who: lap.i, line: 'am häufigsten über die Bank', val: `${lap.v} Runden ums Brett` });
+  const lap = best(s => s.laps !== undefined ? s.laps : Math.round((s.bank || 0) / BANK_BONUS));
+  if (lap) out.push({ ic: 'lap', t: 'Vielfahrer', who: lap.i, line: 'am häufigsten über die Bank', val: `${lap.v} ${lap.v === 1 ? 'Runde' : 'Runden'} ums Brett` });
   if (!out.length) return '';
   return `<div class="glbl">Auszeichnungen</div><div class="awards">${out.map(a => `<div class="award" style="--pc:${P(a.who).color}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${AWARD_ICONS[a.ic]}</svg>
@@ -8118,6 +8220,7 @@ const NET_PREFIX = 'hotelkoenige-';
 const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 // Fingerabdruck der Regeln: nur gleiche Spielstände dürfen zusammen spielen
 const NET_PROTO = (() => {
+  if (typeof ENGINE_HASH === 'string') return 'hk2-' + ENGINE_HASH;
   const src = act.toString() + aiAction.toString() + JSON.stringify(DEFAULT_RULES) + JSON.stringify(HOTELS) + JSON.stringify(CARDS);
   let h = 0x811c9dc5;
   for (let i = 0; i < src.length; i++) { h ^= src.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -8980,26 +9083,65 @@ function logKeys(e) {
 $('logov').addEventListener('click', e => { if (e.target === $('logov')) closeLog(); });
 
 // ---------------- Vollbild und Beenden ----------------
+// Vollbild auch in älterem Safari (mit webkit-Vorsilbe); iPhone kann gar kein Vollbild für Seiten
+const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+function fsRequest(el) {
+  const f = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!f) return null;
+  try { const p = f.call(el, { navigationUI: 'hide' }); return p && p.then ? p : Promise.resolve(); } catch (e) { return Promise.reject(e); }
+}
+function fsExit() {
+  const f = document.exitFullscreen || document.webkitExitFullscreen;
+  if (!f) return;
+  try { const p = f.call(document); if (p && p.catch) p.catch(() => {}); } catch (e) { /* egal */ }
+}
 function enterFullscreen() {
-  const el = document.documentElement;
-  if (document.fullscreenElement || !el.requestFullscreen) return;
-  try { const p = el.requestFullscreen({ navigationUI: 'hide' }); if (p && p.catch) p.catch(() => {}); } catch (e) { /* nicht erlaubt */ }
+  if (fsElement()) return;
+  const p = fsRequest(document.documentElement);
+  if (p) p.catch(() => {});
 }
 function toggleFullscreen() {
-  if (document.fullscreenElement) { document.exitFullscreen().catch(() => {}); return; }
-  const el = document.documentElement;
-  if (!el.requestFullscreen) { toast('Vollbild geht hier nicht. Drücke F11.'); return; }
-  el.requestFullscreen({ navigationUI: 'hide' }).catch(() => toast('Vollbild ist hier gesperrt. Drücke F11 im Browser.'));
+  if (fsElement()) { fsExit(); return; }
+  const touch = matchMedia('(pointer: coarse)').matches;
+  const p = fsRequest(document.documentElement);
+  if (!p) { toast(touch ? 'Vollbild gibt es in diesem Browser nicht.' : 'Vollbild geht hier nicht. Drücke F11.'); return; }
+  p.catch(() => toast(touch ? 'Vollbild ist in diesem Browser gesperrt.' : 'Vollbild ist hier gesperrt. Drücke F11 im Browser.'));
 }
 function openQuit() {
   clearTimeout(view.aiTimer);
   $('modal').onclick = null;
-  $('modal').innerHTML = `<div class="overlay"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="qu-t">
-    <h2 id="qu-t">Spiel beenden?</h2>
-    <p class="lead">${S && S.phase !== 'over' ? `Dein Spielstand wird gespeichert. Beim nächsten Start geht es in Runde ${S.round} genau hier weiter.` : 'Das Spiel wird geschlossen.'}</p>
-    <div class="dacts"><button class="btn quiet" type="button" id="qu-no" data-close>Weiterspielen</button><button class="btn primary" type="button" id="qu-yes" data-primary>Beenden</button></div></div></div>`;
+  const running = S && S.phase !== 'over';
+  const netNote = netIsHost() ? ' Der Online-Raum wird dabei geschlossen.' : netIsGuest() ? ' Du verlässt dabei den Online-Raum.' : '';
+  $('modal').innerHTML = `<div class="overlay"><div class="dialog quitdlg" role="dialog" aria-modal="true" aria-labelledby="qu-t">
+    <h2 id="qu-t">${running ? 'Partie beenden?' : 'Spiel beenden?'}</h2>
+    <div class="quitopts">
+      <button class="qopt" type="button" id="qu-menu"><b>Zum Hauptmenü</b><span>${running && !netIsGuest() ? 'Die Partie endet hier, das Spiel bleibt offen. Dein Stand ist gesichert: Im Hauptmenü holt „Letztes Spiel fortsetzen“ ihn zurück.' : 'Zurück zum Startbildschirm, um eine neue Partie zu beginnen.'}${netNote}</span></button>
+      <button class="qopt" type="button" id="qu-yes"><b>Spiel schließen</b><span>${running ? `Alles wird gespeichert. Beim nächsten Start geht es in Runde ${S.round} genau hier weiter.` : 'Das Spiel wird geschlossen.'}${netNote}</span></button>
+    </div>
+    <div class="dacts"><button class="btn primary" type="button" id="qu-no" data-close data-primary>Weiterspielen</button></div></div></div>`;
   $('qu-no').onclick = () => closeModal();
   $('qu-yes').onclick = () => quitGame();
+  $('qu-menu').onclick = () => toMainMenu();
+}
+// Laufende Partie verlassen, ohne das ganze Spiel zu schließen: zurück zum Startbildschirm
+function toMainMenu() {
+  clearTimeout(view.aiTimer); clearTimeout(view.endTimer);
+  if (NET.on) {
+    const guest = netIsGuest();
+    netClose();
+    // als Gast wieder das eigene Spiel laden; das Online-Spiel gehört dem Gastgeber
+    if (guest) { const own = load(); S = own ? own.S : newGame({ players: DEFAULT_SEATS.map((p, i) => ({ ...p, color: PLAYER_COLORS[i] })), seed: 1986 }); }
+  }
+  save();
+  // eine laufende Animation bricht still ab, das Brett wird leer
+  view.gen = (view.gen || 0) + 1;
+  view.busy = false;
+  undoStack.length = 0;
+  document.querySelectorAll('.evcard').forEach(el => el.remove());
+  if (!$('logov').hidden) { $('logov').hidden = true; $('pausechip').hidden = true; view.paused = false; }
+  $('modal').onclick = null; $('modal').innerHTML = '';
+  netUi();
+  openSetup(true);
 }
 function quitGame() {
   $('modal').innerHTML = '';
@@ -9007,7 +9149,7 @@ function quitGame() {
   view.paused = true;
   clearTimeout(view.aiTimer); clearTimeout(view.endTimer);
   music.stop();
-  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  if (fsElement()) fsExit();
   try { window.close(); } catch (e) { /* Fenster gehört dem Browser */ }
   setTimeout(() => {
     view.stopped = true;
