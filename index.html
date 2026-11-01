@@ -2592,12 +2592,16 @@ let S = null;
 let settings = { musicVol: 75, sfxVol: 30, fast: false, fastAI: true, autoEnd: false, follow: false, sound: true, music: true, labels: true, daynight: 'cycle', cinematic: true, recap: true, fullscreenOnStart: true, quips: 'often', quality: 'auto', hints: true, danger: false, entLabels: true, neon: true, life: true, miniature: false, diceSound: 'wood' };
 let lastSetup = null;
 // Detailgrad der Formen und Texturen: beim Start aus der gespeicherten Grafikqualität gelesen
+const SAVED_Q = (() => { try { return ((JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') || {}).settings || {}).quality || 'auto'; } catch (e) { return 'auto'; } })();
 const DETAIL = (() => {
   // Tablets und Handys haben wenig Grafikspeicher: bei „Automatisch“ dort die schlanke Variante
   let touch = false;
   try { touch = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches; } catch (e) { /* egal */ }
-  try { const q = ((JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') || {}).settings || {}).quality; return q === 'low' ? 1 : q === 'medium' ? 1.5 : q === 'ultra' ? 3 : q === 'high' ? 2 : touch ? 1 : 2; } catch (e) { return touch ? 1 : 2; }
+  const q = SAVED_Q;
+  return q === 'low' ? 1 : q === 'medium' ? 1.5 : q === 'ultra' || q === 'max' ? 3 : q === 'high' ? 2 : touch ? 1 : 2;
 })();
+// Stufe „Maximal“: echte Fensterrahmen, Simse, Gauben und mehr Pflanzen (gilt ab dem Start)
+const PRACHT = SAVED_Q === 'max';
 const TEX_SCALE = DETAIL >= 2 ? 2 : 1;          // Texturen in doppelter Auflösung
 const ICO = DETAIL >= 2 ? 1 : 0;                // Laubkugeln runder
 const PINE_SEG = DETAIL >= 2 ? 10 : 7;          // Tannen etwas feiner, bleiben aber kantig
@@ -3195,6 +3199,7 @@ function body(h, fw, height, fd) {
   const st = STYLE[h];
   const m = mesh(facadeGeo(fw, height, fd), [wallMat(h), wallMat(h), mat(st.roofColor), mat(st.roofColor), wallMat(h), wallMat(h)]);
   m.position.y = height / 2;
+  m.userData.body = { fw, H: height, fd };
   return m;
 }
 
@@ -3393,6 +3398,7 @@ function buildPart(h, stage) {
       break;
     }
   }
+  if (PRACHT) prachtPart(h, g, slot, isMain, front);
   return g;
 }
 
@@ -3687,6 +3693,7 @@ function buildWorld() {
   const lake = mesh(new T.CylinderGeometry(1, 1, 0.03, 40), WATER(), false, true);
   lake.scale.set(1.2 * K, 1, 0.95 * K); lake.position.set(-6.5 * K, 0.02, -5.5 * K);
   scene.add(lake); waterMeshes.push(lake);
+  if (PRACHT) prachtLake();
   const sand = mesh(new T.CylinderGeometry(1, 1, 0.02, 40), mat('#e8d3a3'), false, true);
   sand.scale.set(1.2 * K + 0.16, 1, 0.95 * K + 0.15); sand.position.set(-6.5 * K, 0.012, -5.5 * K);
   scene.add(sand);
@@ -3698,7 +3705,7 @@ function buildWorld() {
   W3.boat = boat;
   [[-7.6, -6.6], [-5.2, -6.6], [-7.7, -4.3], [-5.3, -4.4]].forEach(([x, z], k) => { const t = makeTree(k % 2 ? 'round' : 'pine', 1.2, r); t.position.set(x * K, 0, z * K); trees.add(t); });
   // Wäldchen oben rechts
-  for (let k = 0; k < 9 * K * K; k++) {
+  for (let k = 0; k < 9 * K * K * (PRACHT ? 1.6 : 1); k++) {
     const t = makeTree(k % 3 ? 'pine' : 'round', 1 + r() * 0.5, r);
     t.position.set((5.3 + r() * 2.4) * K, 0, (-6.6 + r() * 2.3) * K);
     trees.add(t);
@@ -3713,6 +3720,7 @@ function buildWorld() {
   [[-7.6, 6.6], [-5.0, 6.7], [7.6, 6.6], [5.1, 6.7]].forEach(([x, z]) => { const t = makeTree('round', 1.1, r); t.position.set(x * K, 0, z * K); trees.add(t); });
   mergeStatic(trees);
   if (K > 1) buildScenery();
+  if (PRACHT) prachtLawn();
 }
 
 function starGeo(rad) {
@@ -3786,6 +3794,7 @@ function buildBank(x, z) {
   sign.position.set(0.89, 0.8, 0);
   sign.rotation.y = Math.PI / 2;
   g.add(sign);
+  if (PRACHT) prachtBank(g);
   g.rotation.y = 0;   // Säulen zur Stichstraße
   g.scale.setScalar(1 + (K - 1) * 0.4);
   scene.add(g);
@@ -3831,6 +3840,7 @@ function buildTownHall(x, z) {
   sign.position.set(0.1 - 0.81, 0.5, 0);
   sign.rotation.y = -Math.PI / 2;
   g.add(sign);
+  if (PRACHT) prachtTownHall(g);
   g.rotation.y = 0;   // Uhrturm zur Stichstraße
   g.scale.setScalar(1 + (K - 1) * 0.4);
   scene.add(g);
@@ -4035,6 +4045,8 @@ function phoneLayout() {
 }
 const portrait = () => document.body.classList.contains('ph-port');
 const maxR = () => Math.max(40 * K, camState.fitR * 1.25);
+// bei „Maximal“ näher heran, damit man die Fensterrahmen und Gauben auch sieht
+const minR = () => (PRACHT ? 3.2 : 6);
 function layoutInsets() {
   const B = document.body.classList;
   if (B.contains('phone')) {
@@ -4127,7 +4139,7 @@ canvasEl.addEventListener('pointermove', e => {
   if (touches.size >= 2 && ptr.pinch) {
     const now = pinchInfo(), was = ptr.pinch;
     camState.userZoomed = true;
-    camState.des.r = clamp(camState.des.r * (was.d / now.d), 6, maxR());
+    camState.des.r = clamp(camState.des.r * (was.d / now.d), minR(), maxR());
     panBy(now.mx - was.mx, now.my - was.my);
     ptr.pinch = now;
     return;
@@ -4167,7 +4179,7 @@ canvasEl.addEventListener('pointerleave', () => { ptr.inside = false; ptr.dirty 
 canvasEl.addEventListener('wheel', e => {
   e.preventDefault();
   camState.userZoomed = true;
-  camState.des.r = clamp(camState.des.r * (1 + Math.sign(e.deltaY) * Math.min(0.12, Math.abs(e.deltaY) * 0.0012)), 6, maxR());
+  camState.des.r = clamp(camState.des.r * (1 + Math.sign(e.deltaY) * Math.min(0.12, Math.abs(e.deltaY) * 0.0012)), minR(), maxR());
 }, { passive: false });
 
 // ---------------- Auswahl per Maus ----------------
@@ -5906,6 +5918,7 @@ function buildPensions() {
       grp.userData.smoke = new T.Vector3(cx - 0.1 + 0.28, 1.2, cz - 0.15 - 0.12);
       house.add(box(0.2, 0.32, 0.02, mat('#6b3a1f'), 0, 0.16, 0.41));
       house.add(box(0.36, 0.03, 0.14, mat('#a8432f'), 0, 0.36, 0.46));
+      if (PRACHT) prachtPension(0, house, 1.0, 0.72, 0.8, 0, 0);
       grp.add(house);
       // Blumenbeete und Zaun
       const r = mulberry(5);
@@ -5933,6 +5946,7 @@ function buildPensions() {
       for (let i = 0; i < 12; i++) house.add(box(0.015, 0.12, 0.015, woodM, -0.62 + i * 0.113, 0.45, 0.59));
       house.add(box(1.3, 0.02, 0.02, woodM, 0, 0.51, 0.59));
       house.add(box(0.24, 0.3, 0.02, mat('#3a2616'), 0, 0.15, 0.46));
+      if (PRACHT) prachtPension(1, house, 1.35, 1.0, 0.9, 0.24 / 0.55, 0.3);
       grp.add(house);
       // Linde
       const tree = makeTree('round', 1.7, mulberry(12)); tree.position.set(cx + 0.6, 0.02, cz + 0.45); grp.add(tree);
@@ -6182,8 +6196,8 @@ function openRuleEditor({ rules: start, mode, onApply, onCancel }) {
       return `<div class="ropt"><div class="ropt-h"><h5>Lautstärke</h5><p>Wird sofort beim Schieben übernommen.</p></div>${volumeSliders()}</div>
         <div class="ropt"><div class="ropt-h"><h5>Tageszeit</h5><p>Wechselt sie mit den Runden, vergeht alle fünf Runden ein Tag.</p></div>
           <div class="segx">${[['cycle', 'Wechselt'], ['day', 'Immer Tag'], ['evening', 'Abendsonne'], ['night', 'Immer Nacht']].map(([v, l]) => segBtn('daynight', v, l, look.daynight, v === 'cycle', 'lk')).join('')}</div></div>
-        <div class="ropt"><div class="ropt-h"><h5>Grafikqualität</h5><p>Niedriger schont Grafikkarte und Lüfter. Automatisch beginnt passend zum Bildschirm und schaltet zurück, wenn es ruckelt. Sehr hoch rechnet feiner als der Bildschirm und rundet Formen noch weiter ab; das braucht eine kräftige Grafikkarte. Wie rund die Formen sind, gilt ab dem nächsten Start.${gfx.level ? ` Gerade aktiv: ${QUALITY[gfx.level].label}.` : ''}</p></div>
-          <div class="segx">${[['auto', 'Automatisch'], ['ultra', 'Sehr hoch'], ['high', 'Hoch'], ['medium', 'Mittel'], ['low', 'Niedrig']].map(([v, l]) => segBtn('quality', v, l, look.quality || 'auto', v === 'auto', 'lk')).join('')}</div></div>
+        <div class="ropt"><div class="ropt-h"><h5>Grafikqualität</h5><p>Niedriger schont Grafikkarte und Lüfter. Automatisch beginnt passend zum Bildschirm und schaltet zurück, wenn es ruckelt. Sehr hoch rechnet feiner als der Bildschirm und rundet Formen noch weiter ab; das braucht eine kräftige Grafikkarte. Maximal baut dazu echte Fensterrahmen, Simse, Läden und Gauben an die Hotels und pflanzt deutlich mehr Gras, Blumen und Bäume; gedacht für große Bildschirme und starke Grafikkarten. Wie rund die Formen sind und die Extras von Maximal gelten ab dem nächsten Start.${gfx.level ? ` Gerade aktiv: ${QUALITY[gfx.level].label}.` : ''}</p></div>
+          <div class="segx">${[['auto', 'Automatisch'], ['max', 'Maximal'], ['ultra', 'Sehr hoch'], ['high', 'Hoch'], ['medium', 'Mittel'], ['low', 'Niedrig']].map(([v, l]) => segBtn('quality', v, l, look.quality || 'auto', v === 'auto', 'lk')).join('')}</div></div>
         <div class="ropt"><div class="ropt-h"><h5>Grafik-Extras</h5><p>Leben auf dem Brett: Wolkenschatten, Vögel, Spaziergänger, das Segelboot und nachts Glühwürmchen. Der Miniatur-Effekt lässt das Brett wie ein Modell wirken: Nur die Mitte ist scharf, Lichter leuchten weich. Er kostet etwas Leistung und ist deshalb anfangs aus.</p></div>
           <div class="toggles">${LOOK_GFX.map(([k, l]) => `<label class="tgl"><input type="checkbox" data-lt="${k}" ${look[k] === true || (k !== 'miniature' && look[k] !== false) ? 'checked' : ''}><span class="sw2"></span>${esc(l)}</label>`).join('')}</div></div>
         <div class="ropt"><div class="ropt-h"><h5>Würfelgeräusch</h5><p>Ein Klick spielt das Geräusch zur Probe ab.</p></div>
@@ -6246,7 +6260,12 @@ function openRuleEditor({ rules: start, mode, onApply, onCancel }) {
         Object.assign(settings, look, keepVol);
         if (settings.music) { sfx.unlock(); music.start(); } else music.stop();
         applyVolumes();
-        if (settings.quality !== qBefore) { gfx.auto = null; gfx.autoSteps = 0; applyQuality(); }
+        if (settings.quality !== qBefore) {
+          gfx.auto = null; gfx.autoSteps = 0; applyQuality();
+          // Formen und Extras entstehen beim Start: Hinweis, wenn sie sich mit dieser Wahl ändern würden
+          const willPracht = settings.quality === 'max';
+          if (willPracht !== PRACHT) later(() => toast(willPracht ? 'Fensterrahmen, Simse und mehr Pflanzen erscheinen ab dem nächsten Start' : 'Die Extras von „Maximal“ verschwinden ab dem nächsten Start'), 300);
+        }
         applyLook();
         syncToolButtons();
         save();
@@ -6578,6 +6597,7 @@ function applySeason(idx) {
   for (const o of SEASON_MATS.pines) setCol(o.material.color, L.pine || o.userData.base);
   for (const m of SEASON_MATS.hedges) setCol(m.color, L.hedge ? (m.userData.isLeaf ? shade(L.hedge, 0.12) : L.hedge) : m.userData.base);
   buildSeasonFx(L.fx);
+  prachtSeason(idx, L);
 }
 function buildSeasonFx(cfg) {
   if (seasonVis.fx) { scene.remove(seasonVis.fx.pts); seasonVis.fx.pts.geometry.dispose(); seasonVis.fx = null; }
@@ -6740,6 +6760,7 @@ function mergeStatic(root, skip = () => false) {
 // sehr hoch: feiner als der Bildschirm (1,5x), feinste Formen · hoch: volle Auflösung (bis 2x), weiche Schatten
 // mittel: Auflösung bis 1,25x · niedrig: 1x, ohne Schatten
 const QUALITY = {
+  max: { label: 'Maximal', dpr: 2.5, ss: 1.5, shadows: true, soft: true, map: 4096, fpsActive: 60, fpsIdle: 30, fx: 1 },
   ultra: { label: 'Sehr hoch', dpr: 2.5, ss: 1.5, shadows: true, soft: true, map: 4096, fpsActive: 60, fpsIdle: 30, fx: 1 },
   high: { label: 'Hoch', dpr: 2, shadows: true, soft: true, map: 4096, fpsActive: 60, fpsIdle: 30, fx: 1 },
   medium: { label: 'Mittel', dpr: 1.25, shadows: true, soft: false, map: K > 1 ? 3072 : 2048, fpsActive: 60, fpsIdle: 24, fx: 0.7 },
@@ -7833,6 +7854,7 @@ function buildBig(h, D, sp) {
       const at = sp.take(rad * s);
       if (!at) continue;
       const o = BIG[kind](sp.r, s, h);
+      if (PRACHT) prachtBig(kind, o, s, h);
       o.position.set(at.x, 0.04, at.z);
       if (kind !== 'koiPond' && kind !== 'zen' && kind !== 'lagoon') o.rotation.y = sp.r() * Math.PI * 2;
       else if (!sp.F.alongX) o.rotation.y = Math.PI / 2;
@@ -7865,6 +7887,7 @@ function buildLandscape(h) {
       D.add(o);
     }
   }
+  if (PRACHT) prachtPlot(h, D, sp);
   // alle Grundstücke teilen sich eine Gruppe, die am Ende zusammengefasst wird (weniger Zeichenaufrufe)
   if (!W3.decor) { W3.decor = new T.Group(); scene.add(W3.decor); }
   W3.decor.add(D);
@@ -7923,7 +7946,7 @@ function buildScenery() {
     for (const p of placed) if (Math.hypot(x - p.x, z - p.z) < p.r + rad) return false;
     return true;
   };
-  const target = Math.round(70 * (K - 1));
+  const target = Math.round(70 * (K - 1) * (PRACHT ? 1.7 : 1));
   for (let i = 0; i < target * 40 && placed.length < target; i++) {
     const x = (r() - 0.5) * BW, z = (r() - 0.5) * BD;
     const v = r();
@@ -8355,6 +8378,7 @@ function updateLook(dt, t) {
     N.halo.visible = L > 0.02;
   }
   updateLife(dt, t);
+  if (PRACHT) NAT.uTime.value = t;
 }
 function applyLook() {
   for (const V of W3.plots) if (V.neon) V.neon.root.visible = settings.neon !== false;
@@ -8364,7 +8388,7 @@ function applyLook() {
 // ---------------- Miniatur-Effekt ----------------
 // Bild in eine Textur zeichnen, oben und unten weichzeichnen, helle Stellen leicht leuchten lassen
 const MINI = { rt: null, h1: null, h2: null, q1: null, q2: null, w: 0, h: 0, scene: null, cam: null, quad: null, mats: null };
-function miniWanted() { return settings.miniature === true && (gfx.level === 'high' || gfx.level === 'ultra'); }
+function miniWanted() { return settings.miniature === true && (gfx.level === 'high' || gfx.level === 'ultra' || gfx.level === 'max'); }
 function miniSetup() {
   if (MINI.scene) return;
   MINI.scene = new T.Scene();
@@ -8454,6 +8478,588 @@ function renderScene() {
   M.bright.uniforms.thr.value = 0.88 - dayNight.lamp * 0.26;
   C.glowK.value = 0.2 + dayNight.lamp * 0.55;
   miniPass(M.comp, null);
+}
+
+// ======================================================================
+//  Grafikstufe „Maximal“ (PRACHT): Hotels mit echten Fensterrahmen,
+//  Fensterbänken, Läden, Simsen, Eckpfeilern, Gauben und Schornsteinen;
+//  dazu mehr Natur: Grasbüschel, Blumen, Schilf, Seerosen, Steine, Bäume.
+//  Alles hier entsteht nur, wenn beim Start „Maximal“ gewählt war.
+// ======================================================================
+
+const NOOP = () => {};
+const LINC = {};
+const linCol = hex => LINC[hex] || (LINC[hex] = new T.Color(hex).convertSRGBToLinear().toArray());
+
+// ---------------- Sammelgeometrie ----------------
+// Hunderte kleine Quader in einer Geometrie mit Vertexfarben: ein Zeichenaufruf statt Hunderte
+const BOX_T = (() => { const g = new T.BoxGeometry(1, 1, 1).toNonIndexed(); return { p: g.attributes.position.array, n: g.attributes.normal.array }; })();
+class Batch {
+  constructor() { this.p = []; this.n = []; this.c = []; }
+  // Quader im Rahmen F: Ursprung (ox, oy, oz), rechts = (rx, 0, rz), oben = y, außen = (nx, 0, nz).
+  // Mitte bei a (rechts), b (oben), c (außen); Maße w, h, d; phi dreht in der Wandebene.
+  // Ohne back fehlt die Seite zur Wand hin (die sieht man nie).
+  box(F, a, b, c, w, h, d, col, phi = 0, back = false) {
+    const P = BOX_T.p, N = BOX_T.n, cs = Math.cos(phi), sn = Math.sin(phi), C = linCol(col);
+    const cnt = back ? 36 : 30;
+    for (let i = 0; i < cnt; i++) {
+      const x = P[i * 3] * w, y = P[i * 3 + 1] * h, z = P[i * 3 + 2] * d;
+      const nx = N[i * 3], ny = N[i * 3 + 1], nz = N[i * 3 + 2];
+      const lx = a + x * cs - y * sn, ly = b + x * sn + y * cs, lz = c + z;
+      const mx = nx * cs - ny * sn, my = nx * sn + ny * cs;
+      this.p.push(F.ox + F.rx * lx + F.nx * lz, F.oy + ly, F.oz + F.rz * lx + F.nz * lz);
+      this.n.push(F.rx * mx + F.nx * nz, my, F.rz * mx + F.nz * nz);
+      this.c.push(C[0], C[1], C[2]);
+    }
+  }
+  // beliebige Geometrie mit Matrix (für Kegel, Prismen)
+  geo(g, m4, col) {
+    const gg = g.index ? g.toNonIndexed() : g, pos = gg.attributes.position, nor = gg.attributes.normal;
+    const nm = new T.Matrix3().getNormalMatrix(m4), v = new T.Vector3(), C = linCol(col);
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i).applyMatrix4(m4); this.p.push(v.x, v.y, v.z);
+      v.fromBufferAttribute(nor, i).applyMatrix3(nm).normalize(); this.n.push(v.x, v.y, v.z);
+      this.c.push(C[0], C[1], C[2]);
+    }
+  }
+  toMesh(material, cast = false) {
+    if (!this.p.length) return null;
+    const g = new T.BufferGeometry();
+    g.setAttribute('position', new T.Float32BufferAttribute(this.p, 3));
+    g.setAttribute('normal', new T.Float32BufferAttribute(this.n, 3));
+    g.setAttribute('color', new T.Float32BufferAttribute(this.c, 3));
+    g.computeBoundingSphere();
+    const m = new T.Mesh(g, material);
+    m.castShadow = cast; m.receiveShadow = true;
+    // Zierteile: nicht zusammenfassen (schon zusammengefasst), nicht anklickbar (spart Rechenzeit beim Zeigen)
+    m.userData.keep = true; m.raycast = NOOP;
+    return m;
+  }
+}
+const F0 = { ox: 0, oy: 0, oz: 0, rx: 1, rz: 0, nx: 0, nz: 1 };
+let DET_M = null, DET_GOLD = null;
+const detMat = () => DET_M || (DET_M = new T.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.55 }));
+// Fensterglas der Gauben, des Rathauses und der Bank: nachts brennt Licht
+const glassMat = () => {
+  const m = glowMat('pracht-glass', '#2c3a52', '#ffcf7a', 0, 0.85);
+  m.roughness = 0.18; m.metalness = 0.3;
+  return m;
+};
+const detGold = () => DET_GOLD || (DET_GOLD = new T.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.3, metalness: 0.65 }));
+
+// ---------------- Fassaden ----------------
+// Fensterraster der Fassadentextur (siehe facadeTex): je Kachel FAC_UX x FAC_UY liegen 4 x 4 Fenster
+function winGrid(st) {
+  const px = FAC_UX / 256, py = FAC_UY / 256, cw = FAC_UX / 4, rh = FAC_UY / 4;
+  const ww = cw * (st.glassy ? 0.86 : 0.5), hh = rh * (st.glassy ? 0.72 : 0.56);
+  return { px, py, cw, rh, ww, hh, cy: rh * 0.84 - hh / 2, fr: 4 * px, fv: 4 * py };
+}
+// Die vier Wände eines Quaders (Mitte cx/cz, Unterkante y0): Ursprung links unten, von außen gesehen
+function wallFaces(cx, cz, y0, fw, fd) {
+  return [[0, 1], [1, 0], [0, -1], [-1, 0]].map(([nx, nz]) => {
+    const rx = nz, rz = -nx, W = nx ? fd : fw;
+    return { ox: cx + nx * fw / 2 - rx * W / 2, oy: y0, oz: cz + nz * fd / 2 - rz * W / 2, rx, rz, nx, nz, W };
+  });
+}
+// Je Hotel: welche Zierteile passen zum Baustil
+const PR_STYLE = [
+  { cross: true, lintel: true, shutters: true, piers: '#ffffff', plinth: '#bdb39b', cornice: '#ffffff', sill: '#ffffff', chimney: '#b9805a' },   // Möwennest
+  { cross: true, shutters: true, boxes: true, piers: '#5a3620', plinth: '#8d8a84', chimney: '#8a8580', balconyRail: '#5a3620' },             // Alpenglühen
+  { cross: true, piers: '#b8323f', plinth: '#6b5a52', sill: '#3a2830', eaves: true },                                                       // Kirschblüte
+  { vigas: '#6e4b2c', plinth: '#b98a5c', sill: '#c99a6a', keystone: '#f3e1c2' },                                                            // Wüstenrose
+  { plinth: '#c4d0ce', sill: '#ffffff', rails: '#ffffff' },                                                                                  // Lagune
+  { plinth: '#8f9bb0' },                                                                                                                     // Polarstern
+  { plinth: '#a86a45', cornice: '#e9b791', sill: '#e9b791', keystone: '#f4dcbc' },                                                          // Kasbah
+  { cross: true, lintel: true, piers: '#fffaf0', plinth: '#b5aea0', sill: '#fffaf0', gold: true, dormers: true },                            // Grand Palais
+];
+
+function rectWindow(B, FB, F, uc, yc, G, ps, st) {
+  const { ww, hh, fr, fv } = G, d = 0.012, fc = st.frame;
+  FB.box(F, uc, yc + hh / 2 + fv / 2, d / 2, ww + 2 * fr, fv, d, fc);
+  FB.box(F, uc, yc - hh / 2 - fv / 2, d / 2, ww + 2 * fr, fv, d, fc);
+  FB.box(F, uc - ww / 2 - fr / 2, yc, d / 2, fr, hh, d, fc);
+  FB.box(F, uc + ww / 2 + fr / 2, yc, d / 2, fr, hh, d, fc);
+  if (ps.cross) {
+    FB.box(F, uc, yc, 0.003, 0.0055, hh, 0.006, fc);
+    FB.box(F, uc, yc + hh * 0.12, 0.003, ww, 0.0055, 0.006, fc);
+  }
+  const sw = ww + 2 * fr;
+  if (ps.boxes) {
+    // Blumenkasten statt Fensterbank
+    const yb = yc - hh / 2 - fv - 0.014;
+    B.box(F, uc, yb, 0.018, sw + 0.012, 0.026, 0.036, '#6b4a2c');
+    const fl = ['#e8384f', '#ff8ac0', '#e8384f', '#ffffff', '#e8384f'];
+    for (let k = 0; k < 5; k++) B.box(F, uc - sw / 2 + 0.012 + k * (sw - 0.024) / 4, yb + 0.018, 0.02, 0.017, 0.016, 0.022, fl[k], k * 0.4);
+  } else {
+    B.box(F, uc, yc - hh / 2 - fv - 0.006, 0.014, sw + 0.024, 0.012, 0.028, ps.sill || shade(st.wall, -0.12));
+  }
+  if (ps.lintel) B.box(F, uc, yc + hh / 2 + fv + 0.008, 0.01, sw + 0.016, 0.016, 0.02, ps.sill || shade(st.wall, -0.12));
+  if (ps.shutters && st.shutters) {
+    const off = ww / 2 + 8.5 * G.px, w = 7 * G.px, h = hh + 4 * G.py;
+    B.box(F, uc - off, yc, 0.004, w, h, 0.008, st.shutters);
+    B.box(F, uc + off, yc, 0.004, w, h, 0.008, st.shutters);
+  }
+}
+function archWindow(B, F, uc, yc, G, ps, st) {
+  const fc = st.frame, rx = G.ww / 2 + G.fr / 2, archR = (G.ww / 2) / G.px * G.py;
+  const top = yc + G.hh / 2, spring = top - archR, bot = yc - G.hh / 2;
+  B.box(F, uc - rx, (bot + spring) / 2, 0.006, G.fr, spring - bot, 0.012, fc);
+  B.box(F, uc + rx, (bot + spring) / 2, 0.006, G.fr, spring - bot, 0.012, fc);
+  const ry = archR + G.fv / 2, N = 8;
+  let px = uc + rx, py = spring;
+  for (let i = 1; i <= N; i++) {
+    const a = (i / N) * Math.PI, x = uc + Math.cos(a) * rx, y = spring + Math.sin(a) * ry;
+    B.box(F, (px + x) / 2, (py + y) / 2, 0.006, Math.hypot(x - px, y - py) + 0.004, G.fv, 0.012, fc, Math.atan2(y - py, x - px));
+    px = x; py = y;
+  }
+  B.box(F, uc, bot - G.fv / 2, 0.006, G.ww + 2 * G.fr, G.fv, 0.012, fc);
+  B.box(F, uc, bot - G.fv - 0.006, 0.014, G.ww + 2 * G.fr + 0.024, 0.012, 0.028, ps.sill || shade(st.wall, -0.12));
+  if (ps.keystone) B.box(F, uc, spring + ry + 0.01, 0.008, 0.022, 0.03, 0.016, ps.keystone);
+}
+// Ring aus vier Leisten um einen Quader (Sockel, Gesims)
+function ring(B, cx, cz, y, fw, fd, h, t, col) {
+  B.box(F0, cx, y, cz + fd / 2 + t / 2, fw + 2 * t, h, t, col, 0, true);
+  B.box(F0, cx, y, cz - fd / 2 - t / 2, fw + 2 * t, h, t, col, 0, true);
+  B.box(F0, cx + fw / 2 + t / 2, y, cz, t, h, fd, col, 0, true);
+  B.box(F0, cx - fw / 2 - t / 2, y, cz, t, h, fd, col, 0, true);
+}
+// Alle Zierteile eines Baukörpers. opts: door [fx, fz, breite, höhe] für die Eingangsseite
+function facadeDetails(B, FB, st, ps, cx, cz, y0, fw, H, fd, opts = {}) {
+  const G = winGrid(st);
+  for (const F of wallFaces(cx, cz, y0, fw, fd)) {
+    const W = F.W;
+    const door = opts.door && opts.door[0] === F.nx && opts.door[1] === F.nz && y0 < 0.01 ? opts.door : null;
+    // hinter der Leuchtreklame keine Fensterbänke: die würden durch das Schild stechen
+    const sg = opts.sign, sign = sg && sg.f[0] === F.nx && sg.f[1] === F.nz && Math.abs((F.nx ? fw : fd) / 2 - sg.off) < 0.03 ? sg : null;
+    if (st.glassy) {
+      // Glasfassade: senkrechte Rippen auf den Fugen, waagrechte Bänder je Geschoss
+      for (let k = 1; k * G.cw < W - 0.05; k++) FB.box(F, k * G.cw, H / 2, 0.01, 0.012, H - 0.02, 0.02, '#eef2fa');
+      for (let j = 1; j * G.rh < H - 0.05; j++) B.box(F, W / 2, j * G.rh + 0.006, 0.008, W, 0.014, 0.016, '#ffffff');
+    } else {
+      for (let j = 0; ; j++) {
+        const yc = j * G.rh + G.cy;
+        if (yc + G.hh / 2 + G.fv + 0.03 > H) break;
+        for (let k = 0; ; k++) {
+          const uc = (k + 0.5) * G.cw;
+          if (uc + G.ww / 2 + G.fr + 0.035 > W) break;
+          if (uc - G.ww / 2 - G.fr < 0.035) continue;
+          if (door && j === 0 && Math.abs(uc - W / 2) < door[2] / 2 + G.ww / 2 + 0.02) continue;
+          if (sign && Math.abs(uc - W / 2) < sign.hw + 0.09 && Math.abs(y0 + yc - sign.y) < sign.hh + G.hh / 2 + 0.035) continue;
+          if (st.arch) archWindow(B, F, uc, yc, G, ps, st);
+          else rectWindow(B, FB, F, uc, yc, G, ps, st);
+        }
+      }
+    }
+    // Balkenköpfe unter der Dachkante, immer zwischen zwei Fenstern
+    if (ps.vigas) for (let k = 1; k * G.cw < W - 0.04; k++) B.box(F, k * G.cw, H - 0.022, 0.02, 0.018, 0.018, 0.04, ps.vigas);
+    if (door) {
+      // Portal mit Stufen und zwei Wandlampen
+      const dw = door[2] * 0.55, dh = door[3] || 0.14, u = W / 2, pc = ps.sill || st.frame;
+      B.box(F, u, dh / 2, 0.0035, dw, dh, 0.007, '#2a1d14');
+      B.box(F, u, dh + 0.012, 0.008, dw + 0.05, 0.024, 0.016, pc);
+      B.box(F, u - dw / 2 - 0.012, dh / 2, 0.008, 0.022, dh, 0.016, pc);
+      B.box(F, u + dw / 2 + 0.012, dh / 2, 0.008, 0.022, dh, 0.016, pc);
+      B.box(F, u, 0.007, 0.035, dw + 0.08, 0.014, 0.07, ps.plinth || '#bdb39b');
+      B.box(F, u, 0.019, 0.02, dw + 0.05, 0.01, 0.04, ps.plinth || '#bdb39b');
+      if (opts.lamps) for (const s of [-1, 1]) opts.lamps(F, u + s * (dw / 2 + 0.05), dh * 0.8);
+      if (opts.cols) {
+        const cyl = new T.CylinderGeometry(0.008, 0.01, 0.15, 10), m4 = new T.Matrix4();
+        for (const s of [-1, 1]) {
+          const a = u + s * (door[2] / 2 - 0.016), c = 0.112;
+          m4.makeTranslation(F.ox + F.rx * a + F.nx * c, F.oy + 0.075, F.oz + F.rz * a + F.nz * c);
+          B.geo(cyl, m4, pc);
+        }
+      }
+    }
+  }
+  if (ps.plinth && y0 < 0.01) ring(B, cx, cz, 0.024, fw, fd, 0.048, 0.013, ps.plinth);
+  if (ps.cornice) {
+    ring(B, cx, cz, y0 + H - 0.012, fw, fd, 0.024, 0.018, ps.cornice);
+    ring(B, cx, cz, y0 + H - 0.032, fw, fd, 0.016, 0.009, ps.cornice);
+  }
+  if (ps.piers) for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) B.box(F0, cx + sx * fw / 2, y0 + H / 2, cz + sz * fd / 2, 0.03, H - 0.004, 0.03, ps.piers, 0, true);
+}
+
+// Wandlampe neben der Tür: leuchtet nachts
+function lampMaker(g) {
+  const lm = glowMat('pracht-lamp', '#fff1c9', '#ffc861', 0.1, 1.8);
+  const bm = mat('#2b2620', { roughness: 0.5 });
+  return (F, u, y) => {
+    const p = (a, c) => [F.ox + F.rx * a + F.nx * c, F.oz + F.rz * a + F.nz * c];
+    const [x1, z1] = p(u, 0.012), [x2, z2] = p(u, 0.02);
+    g.add(box(0.012, 0.012, 0.012, bm, x1, y + 0.02, z1));
+    const l = box(0.018, 0.03, 0.018, lm, x2, y, z2); l.castShadow = false;
+    g.add(l);
+  };
+}
+
+// ---------------- Dachdetails ----------------
+function chimney(g, x, y, z, col, snow) {
+  g.add(box(0.06, 0.17, 0.06, mat(col, { roughness: 0.85 }), x, y + 0.085, z));
+  g.add(box(0.076, 0.016, 0.076, mat(shade(col, -0.25), { roughness: 0.8 }), x, y + 0.178, z));
+  if (snow) g.add(box(0.07, 0.022, 0.07, mat('#f7fbff', { roughness: 0.9 }), x, y + 0.197, z));
+}
+// Gaube auf einer Mansarddach-Seite (Rahmen F an der Wand, Dach ab wallH bis H, Spitze 62 % so breit)
+function dormer(g, B, GL, F, a, wallH, Hr, E, st) {
+  const t0 = 0.1, hd = Math.min(0.085, Hr * 0.42);
+  const yb = wallH + Hr * t0, cFront = -E * 0.38 * t0 + 0.006;
+  // so tief, dass die Gaube hinten im Dach steckt (flache Dächer weichen weiter zurück)
+  const dd = Math.max(0.12, E * 0.38 * Math.min(1, (yb + hd + 0.05 - wallH) / Hr) + cFront + 0.04);
+  if (dd > 0.22) return;   // zu flache Dachseite: eine Gaube sähe dort aus wie ein langer Keil
+  const at = (u, c) => [F.ox + F.rx * u + F.nx * c, F.oz + F.rz * u + F.nz * c];
+  const wallC = st.wall, rc = st.roofColor;
+  B.box(F, a, yb + hd / 2, cFront - dd / 2, 0.088, hd, dd, wallC, 0, true);
+  GL.box(F, a, yb + hd * 0.5, cFront + 0.002, 0.05, hd * 0.62, 0.004, '#2c3a52');
+  B.box(F, a, yb + hd * 0.5 + hd * 0.31 + 0.005, cFront + 0.004, 0.064, 0.01, 0.008, '#d4af37');
+  B.box(F, a, yb + hd * 0.5 - hd * 0.31 - 0.005, cFront + 0.006, 0.07, 0.01, 0.014, '#fffaf0');
+  // Giebeldach der Gaube
+  const roof = prism(0.112, 0.05, dd + 0.02, mat(rc, { roughness: 0.55 }));
+  const [x, z] = at(a, cFront - dd / 2 + 0.01);
+  roof.position.set(x, yb + hd, z);
+  roof.rotation.y = Math.atan2(F.nx, F.nz);
+  g.add(roof);
+}
+
+// ---------------- Hotelteile ----------------
+function prachtPart(h, g, slot, isMain, front) {
+  const st = STYLE[h], ps = PR_STYLE[h];
+  const B = new Batch(), FB = ps.gold ? new Batch() : B, GL = new Batch();
+  const bodies = g.children.filter(c => c.userData.body);
+  const lamps = isMain ? lampMaker(g) : null;
+  let sign = null;
+  if (isMain) { const n = neonPlace(h); sign = { f: n.f, off: n.off, y: n.y, hw: (n.w + 0.02) / 2, hh: (n.sh + 0.02) / 2 }; }
+  for (const b of bodies) {
+    const { fw, H, fd } = b.userData.body;
+    const y0 = b.position.y - H / 2;
+    const door = isMain && y0 < 0.01 ? [front[0], front[1], Math.min(front[1] !== 0 ? fw : fd, 0.42) * 0.8, 0.14] : null;
+    facadeDetails(B, FB, st, ps, b.position.x, b.position.z, y0, fw, H, fd, { door, lamps, sign, cols: st.roof !== 'mansard' });
+  }
+  const { fw, fd } = slot, H = slot.height;
+  // Schornstein auf dem Satteldach
+  if (ps.chimney && st.roof === 'gable' && (isMain || slot.kind === 'ext')) {
+    const alongX = fw >= fd, short = alongX ? fd : fw, long = alongX ? fw : fd;
+    const pitch = st.snow ? 0.5 : 0.36, hw = (short + 0.14) / 2, rH = short * pitch, d = hw * 0.42, l = long * (isMain ? 0.26 : -0.18);
+    const y = H + rH * (1 - d / hw) - 0.05;
+    chimney(g, alongX ? l : d, y, alongX ? d : l, ps.chimney, st.snow);
+  }
+  // Holzbalkone (Alpenglühen) bekommen ein Geländer
+  if (ps.balconyRail && st.snow) {
+    const F = wallFaces(0, 0, 0, fw, fd).find(f => f.nx === front[0] && f.nz === front[1]);
+    for (let y = 0.32; y < H - 0.1; y += 0.3) {
+      const L = F.W * 0.8;
+      for (let u = F.W / 2 - L / 2 + 0.01; u <= F.W / 2 + L / 2 - 0.009; u += 0.045) B.box(F, u, y + 0.04, 0.062, 0.008, 0.05, 0.008, ps.balconyRail, 0, true);
+      B.box(F, F.W / 2, y + 0.068, 0.062, L, 0.01, 0.012, ps.balconyRail, 0, true);
+    }
+  }
+  // Pagode: hochgezogene Dachecken
+  if (ps.eaves && st.roof === 'pagoda') {
+    const tiers = isMain ? Math.max(2, Math.round(H / 0.48)) : 1, th = H / tiers;
+    const cone = new T.ConeGeometry(0.02, 0.09, 6), q = new T.Quaternion(), up = new T.Vector3(0, 1, 0), m4 = new T.Matrix4();
+    for (let k = 0; k < tiers; k++) {
+      const s = 1 - k * 0.14, y = k * th + th * 0.78 + 0.03;
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const ax = new T.Vector3(sx * 0.75, 1, sz * 0.75).normalize();
+        q.setFromUnitVectors(up, ax);
+        m4.compose(new T.Vector3(sx * (fw * s + 0.27) / 2, y, sz * (fd * s + 0.27) / 2), q, new T.Vector3(1, 1, 1));
+        B.geo(cone, m4, st.trim);
+      }
+    }
+  }
+  // Lagune: Geländer auf den umlaufenden Balkonen
+  if (ps.rails && st.balconies) {
+    const W = fw + 0.06, D = fd + 0.06, rc = ps.rails;
+    for (let y = 0.225; y < H - 0.05; y += 0.225) {
+      const yr = y + 0.058, o = 0.006;
+      ring(B, 0, 0, yr, W - 2 * o - 0.008, D - 2 * o - 0.008, 0.008, 0.008, rc);
+      for (const [nx, nz] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+        const L = nx ? D : W;
+        for (let s = -L / 2 + 0.03; s <= L / 2 - 0.03; s += 0.07) {
+          const x = nx ? nx * (W / 2 - o) : s, z = nx ? s : nz * (D / 2 - o);
+          B.box(F0, x, y + 0.032, z, 0.006, 0.044, 0.006, rc, 0, true);
+        }
+      }
+    }
+  }
+  // Grand Palais: Gauben auf dem Mansarddach
+  if (ps.dormers && st.roof === 'mansard') {
+    const wallH = H * 0.8, Hr = H - wallH;
+    for (const F of wallFaces(0, 0, 0, fw, fd)) {
+      const E = F.nx ? fw / 2 : fd / 2, L = F.W * 0.78, n = Math.max(1, Math.floor(L / 0.3));
+      for (let i = 0; i < n; i++) dormer(g, B, GL, F, F.W / 2 - L / 2 + (i + 0.5) * (L / n), wallH, Hr, E, st);
+    }
+  }
+  const m1 = B.toMesh(detMat());
+  if (m1) g.add(m1);
+  if (FB !== B) { const m2 = FB.toMesh(detGold()); if (m2) g.add(m2); }
+  const m3 = GL.toMesh(glassMat());
+  if (m3) g.add(m3);
+}
+
+// Gasthof Linde: dieselben Fenster wie die Fassadentextur; Pension Rosi (Fachwerk) bekommt nur einen Sockel
+function prachtPension(k, house, w, h, d, doorW, doorH) {
+  const B = new Batch();
+  if (k === 1) {
+    const st = { wall: '#ecd9a8', frame: '#ffffff', shutters: '#3f7a3a' };
+    const ps = { cross: true, shutters: true, boxes: true, plinth: '#9a948a', sill: '#ffffff' };
+    facadeDetails(B, B, st, ps, 0, 0, 0, w, h, d, { door: [0, 1, doorW, doorH], lamps: lampMaker(house) });
+  } else {
+    ring(B, 0, 0, 0.024, w, d, 0.048, 0.013, '#8f8679');
+  }
+  const m = B.toMesh(detMat());
+  if (m) house.add(m);
+}
+
+// Rathaus: hohe Sprossenfenster mit Rundbogen-Sturz im Backstein, Sockel und Ecksteine
+function prachtTownHall(g) {
+  const B = new Batch(), GL = new Batch(), cx = 0.1, cz = 0, fw = 1.6, fd = 1.2, y0 = 0.06, H = 0.7;
+  const st = { wall: '#b4553d', frame: '#f1ece2', arch: true };
+  const G = { px: 0.004, py: 0.0045, ww: 0.085, hh: 0.17, fr: 0.012, fv: 0.012 };
+  for (const F of wallFaces(cx, cz, y0, fw, fd)) {
+    if (F.nx === -1) continue;                       // Seite mit Uhrturm und Schild
+    for (const yc of [0.17, 0.45]) {
+      for (let u = 0.16; u < F.W - 0.1; u += 0.22) {
+        GL.box(F, u, yc, 0.002, G.ww, G.hh, 0.004, '#2c3a52');
+        B.box(F, u, yc, 0.004, 0.006, G.hh, 0.006, st.frame);
+        B.box(F, u, yc + G.hh * 0.15, 0.004, G.ww, 0.006, 0.006, st.frame);
+        archWindow(B, F, u, yc, { ...G, cw: 0.22, rh: 0.3, cy: 0 }, { sill: '#f1ece2', keystone: '#f1ece2' }, st);
+      }
+    }
+    for (const s of [0, 1]) for (let y = 0.02; y < H - 0.02; y += 0.09) {
+      const w = (Math.round(y / 0.09) % 2) ? 0.06 : 0.04;
+      B.box(F, s ? F.W - w / 2 : w / 2, y + 0.04, 0.006, w, 0.075, 0.012, '#e9e2d3');
+    }
+  }
+  ring(B, cx, cz, y0 + 0.03, fw, fd, 0.06, 0.015, '#cfc6b5');
+  const m = B.toMesh(detMat()), mg = GL.toMesh(glassMat());
+  if (m) g.add(m);
+  if (mg) g.add(mg);
+}
+
+function prachtBank(g) {
+  const B = new Batch(), GL = new Batch(), G = { px: 0.004, py: 0.0045, ww: 0.11, hh: 0.3, fr: 0.014, fv: 0.014 };
+  const st = { wall: '#ece6d8', frame: '#c9a04a' };
+  for (const F of wallFaces(-0.1, 0, 0.16, 1.4, 1.2)) {
+    if (F.nx === 1) continue;                        // Vorderseite mit Säulen
+    const n = F.nx ? 3 : 4;
+    for (let i = 0; i < n; i++) {
+      const u = (i + 0.5) * F.W / n, yc = 0.36;
+      GL.box(F, u, yc, 0.002, G.ww, G.hh, 0.004, '#2c3a52');
+      B.box(F, u, yc, 0.004, 0.008, G.hh, 0.006, st.frame);
+      for (const dy of [-0.08, 0.06]) B.box(F, u, yc + dy, 0.004, G.ww, 0.008, 0.006, st.frame);
+      rectWindow(B, B, F, u, yc, G, { lintel: true, sill: '#dcd4c2' }, st);
+    }
+  }
+  ring(B, -0.1, 0, 0.885, 1.4, 1.2, 0.03, 0.02, '#dcd4c2');
+  const m = B.toMesh(detMat()), mg = GL.toMesh(glassMat());
+  if (m) g.add(m);
+  if (mg) g.add(mg);
+}
+
+// ---------------- Natur ----------------
+const NAT = { uTime: { value: 0 }, seasonal: [] };
+// Weiche Bewegung im Wind (nur in der Grafikkarte, kostet praktisch nichts)
+function swayMat(amp, o = {}) {
+  const m = new T.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, ...o });
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uTime = NAT.uTime;
+    sh.uniforms.uAmp = { value: amp };
+    sh.vertexShader = 'uniform float uTime;\nuniform float uAmp;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      #ifdef USE_INSTANCING
+        float swPh = instanceMatrix[3].x * 1.7 + instanceMatrix[3].z * 2.3;
+      #else
+        float swPh = 0.0;
+      #endif
+      float swK = max(position.y, 0.0) * uAmp * (sin(uTime * 1.5 + swPh) + 0.4 * sin(uTime * 3.1 + swPh * 1.7));
+      transformed.x += swK; transformed.z += swK * 0.5;`);
+  };
+  m.customProgramCacheKey = () => 'sway';
+  return m;
+}
+// Grasbüschel: einige schmale Halme, leicht nach außen geneigt
+function bladeGeo(n, h0, h1, lean, width, seed) {
+  const r = mulberry(seed), p = [], nn = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + r() * 0.8, h = h0 + r() * (h1 - h0), l = lean * (0.5 + r());
+    const bx = Math.cos(a) * 0.006, bz = Math.sin(a) * 0.006, wx = -Math.sin(a) * width, wz = Math.cos(a) * width;
+    const tx = bx + Math.cos(a) * l, tz = bz + Math.sin(a) * l;
+    // beide Seiten als eigene Dreiecke, Normale nach oben: von jeder Seite gleich hell (doppelseitiges Material wäre hinten dunkel)
+    p.push(bx - wx, 0, bz - wz, bx + wx, 0, bz + wz, tx, h, tz, bx + wx, 0, bz + wz, bx - wx, 0, bz - wz, tx, h, tz);
+    nn.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
+  }
+  const g = new T.BufferGeometry();
+  g.setAttribute('position', new T.Float32BufferAttribute(p, 3));
+  g.setAttribute('normal', new T.Float32BufferAttribute(nn, 3));
+  g.computeBoundingSphere();
+  return g;
+}
+const NGEO = {};
+const natGeo = {
+  tuft: () => NGEO.tuft || (NGEO.tuft = bladeGeo(7, 0.04, 0.075, 0.018, 0.0065, 5)),
+  dune: () => NGEO.dune || (NGEO.dune = bladeGeo(6, 0.06, 0.1, 0.03, 0.004, 9)),
+  reed: () => NGEO.reed || (NGEO.reed = bladeGeo(5, 0.13, 0.21, 0.012, 0.0045, 13)),
+  flower: () => NGEO.flower || (NGEO.flower = new T.OctahedronGeometry(0.016, 0)),
+  stone: () => NGEO.stone || (NGEO.stone = new T.DodecahedronGeometry(0.02, 0)),
+  pad: () => NGEO.pad || (NGEO.pad = new T.CylinderGeometry(0.06, 0.06, 0.004, 9, 1, false, 0.4, Math.PI * 1.8)),
+  cattail: () => NGEO.cattail || (NGEO.cattail = new T.CylinderGeometry(0.006, 0.006, 0.035, 5)),
+};
+const NMAT = {};
+const natMat = {
+  grass: () => NMAT.grass || (NMAT.grass = swayMat(0.16)),
+  reed: () => NMAT.reed || (NMAT.reed = swayMat(0.07)),
+  flower: () => NMAT.flower || (NMAT.flower = new T.MeshStandardMaterial({ color: '#ffffff', roughness: 0.65, flatShading: true })),
+  stone: () => NMAT.stone || (NMAT.stone = new T.MeshStandardMaterial({ color: '#ffffff', roughness: 0.95, flatShading: true })),
+  pad: () => NMAT.pad || (NMAT.pad = new T.MeshStandardMaterial({ color: '#ffffff', roughness: 0.55 })),
+};
+// Instanzen (ein Zeichenaufruf für alle): items mit x, y, z, ry, s (oder sx/sy/sz) und Farbe c
+function inst(geo, material, items, kind) {
+  if (!items.length) return null;
+  const im = new T.InstancedMesh(geo, material, items.length);
+  const m4 = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(), s = new T.Vector3(), p = new T.Vector3(), c = new T.Color();
+  items.forEach((it, i) => {
+    e.set(it.rx || 0, it.ry || 0, it.rz || 0); q.setFromEuler(e);
+    const k = it.s || 1; s.set(it.sx || k, it.sy || k, it.sz || k); p.set(it.x, it.y || 0, it.z);
+    m4.compose(p, q, s); im.setMatrixAt(i, m4);
+    im.setColorAt(i, c.set(it.c || '#ffffff').convertSRGBToLinear());
+  });
+  im.instanceMatrix.needsUpdate = true;
+  if (im.instanceColor) im.instanceColor.needsUpdate = true;
+  im.castShadow = false; im.receiveShadow = true; im.frustumCulled = false; im.raycast = NOOP;
+  im.userData.keep = true;
+  if (kind) NAT.seasonal.push({ o: im, kind });
+  return im;
+}
+const GREENS = ['#5c9e45', '#6aab4f', '#4f8f3c', '#76b358', '#64a24b'];
+const MOSS = ['#4a8a3c', '#5a9a46', '#66a44f', '#528f40'];
+const DUNE = ['#a9b062', '#b9b76e', '#98a35a', '#c2b977'];
+const DRY = ['#a8925c', '#9a8350', '#b7a06a'];
+const FLOWER_SETS = [['#ffffff', '#ffd84a'], ['#ffd84a', '#ff9f43'], ['#8e6fd8', '#ffffff'], ['#6aa0ff', '#ffffff'], ['#ff6b8b', '#ffd1dc'], ['#e8384f', '#ffd84a']];
+// Büschel in Gruppen verteilen: ok(x, z) prüft, ob die Stelle frei ist
+function scatter(out, r, x, z, n, rad, ok, make) {
+  for (let k = 0; k < n; k++) {
+    const a = r() * Math.PI * 2, d = Math.sqrt(r()) * rad, tx = x + Math.cos(a) * d, tz = z + Math.sin(a) * d;
+    if (ok(tx, tz)) out.push(make(tx, tz));
+  }
+}
+function tuftAt(r, cols, y, s0 = 0.8) { return (x, z) => ({ x, y, z, ry: r() * 6.3, s: s0 + r() * 0.8, c: pick(r, cols) }); }
+function flowerAt(r, set, y) { return (x, z) => ({ x, y: y + 0.03 + r() * 0.025, z, ry: r() * 6.3, sx: 1, sy: 0.55, sz: 1, s: 1, c: set[r() < 0.7 ? 0 : 1] }); }
+function stoneAt(r, cols, y, s0 = 0.5, s1 = 1.3) { return (x, z) => { const k = s0 + r() * (s1 - s0); return { x, y: y + 0.004, z, rx: r() * 3, ry: r() * 6.3, sx: k * (0.9 + r() * 0.5), sy: k * 0.55, sz: k, c: pick(r, cols) }; }; }
+
+// freie Rasenflächen auf dem Brett (nicht auf Straßen, Grundstücken, am See, bei Bank und Rathaus)
+function lawnTester() {
+  const S = 1 + (K - 1) * 0.4;
+  const rects = PLOT_RECT.concat(PENSIONS.map(rectWorld));
+  const road = WAYPOINTS.map(([x, z]) => [wx(x), wz(z)]);
+  const segDist = (x, z, a, b) => {
+    const dx = b[0] - a[0], dz = b[1] - a[1], l2 = dx * dx + dz * dz || 1;
+    const t = clamp(((x - a[0]) * dx + (z - a[1]) * dz) / l2, 0, 1);
+    return Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t);
+  };
+  const blocked = [{ x: -6.5 * K, z: -5.5 * K, rx: 1.2 * K + 0.32, rz: 0.95 * K + 0.32 }]
+    .concat(civicSpots().map(c => ({ x: c.x, z: c.z, rx: 1.25 * S, rz: 1.15 * S })));
+  return (x, z, rad = 0.02) => {
+    if (Math.abs(x) > BW / 2 - 0.14 - rad || Math.abs(z) > BD / 2 - 0.14 - rad) return false;
+    for (const q of rects) if (x > q.x0 - 0.05 - rad && x < q.x1 + 0.05 + rad && z > q.z0 - 0.05 - rad && z < q.z1 + 0.05 + rad) return false;
+    for (let i = 0; i < road.length - 1; i++) if (segDist(x, z, road[i], road[i + 1]) < 0.55 + rad) return false;
+    for (const sr of SIDE_ROADS) if (segDist(x, z, sr.a, sr.b) < sr.w + 0.06 + rad) return false;
+    for (const b of blocked) if (((x - b.x) / b.rx) ** 2 + ((z - b.z) / b.rz) ** 2 < 1) return false;
+    return true;
+  };
+}
+function prachtLawn() {
+  const ok = lawnTester(), r = mulberry(909), y = 0.003;
+  const tufts = [], flowers = [], stones = [];
+  const area = BW * BD;
+  for (let i = 0; i < area * 2.6; i++) {
+    const x = (r() - 0.5) * BW, z = (r() - 0.5) * BD;
+    if (!ok(x, z, 0.05)) continue;
+    scatter(tufts, r, x, z, 4 + Math.floor(r() * 8), 0.2, ok, tuftAt(r, GREENS, y, 0.9));
+  }
+  for (let i = 0; i < area * 0.5; i++) {
+    const x = (r() - 0.5) * BW, z = (r() - 0.5) * BD;
+    if (!ok(x, z, 0.1)) continue;
+    const set = pick(r, FLOWER_SETS);
+    scatter(flowers, r, x, z, 6 + Math.floor(r() * 10), 0.16, ok, flowerAt(r, set, y));
+    scatter(tufts, r, x, z, 3, 0.14, ok, tuftAt(r, GREENS, y, 0.5));
+  }
+  for (let i = 0; i < area * 0.06; i++) {
+    const x = (r() - 0.5) * BW, z = (r() - 0.5) * BD;
+    if (ok(x, z, 0.04)) scatter(stones, r, x, z, 1 + Math.floor(r() * 3), 0.06, ok, stoneAt(r, ['#9b978e', '#8a8378', '#b0aa9e'], y));
+  }
+  const G = new T.Group();
+  [inst(natGeo.tuft(), natMat.grass(), tufts, 'grass'), inst(natGeo.flower(), natMat.flower(), flowers, 'flower'), inst(natGeo.stone(), natMat.stone(), stones, 'ground')].forEach(o => o && G.add(o));
+  scene.add(G);
+}
+// Hotelgrundstücke: passend zum Boden
+function prachtPlot(h, D, sp) {
+  const kind = GROUND_KIND[h], r = mulberry(4000 + h * 31), R = PLOT_RECT[h], y = 0.04;
+  const area = R.w * R.d;
+  const free = (x, z) => Math.abs(x - sp.F.cx) < sp.F.hw - 0.02 && Math.abs(z - sp.F.cz) < sp.F.hd - 0.02;
+  const tufts = [], dune = [], flowers = [], stones = [];
+  const spots = (n, rad) => { const out = []; for (let i = 0; i < n; i++) { const at = sp.take(rad); if (at) out.push(at); } return out; };
+  if (kind === 'meadow' || kind === 'moss') {
+    const cols = kind === 'moss' ? MOSS : GREENS;
+    for (const at of spots(Math.round(area * 2), 0.05)) scatter(tufts, r, at.x, at.z, 4 + Math.floor(r() * 7), 0.14, free, tuftAt(r, cols, y));
+    const sets = kind === 'moss' ? [['#f7a8c4', '#ffffff'], ['#ffd1dc', '#f28fb2']] : [['#ffffff', '#ffd84a'], ['#8e6fd8', '#ffffff'], ['#6aa0ff', '#ffd84a']];
+    for (const at of spots(Math.round(area * 0.35), 0.08)) scatter(flowers, r, at.x, at.z, 5 + Math.floor(r() * 8), 0.12, free, flowerAt(r, pick(r, sets), y));
+    for (const at of spots(Math.round(area * 0.08), 0.04)) scatter(stones, r, at.x, at.z, 1 + Math.floor(r() * 2), 0.05, free, stoneAt(r, ['#9b978e', '#8a8378'], y));
+  } else if (kind === 'beach' || kind === 'lagoon') {
+    for (const at of spots(Math.round(area * 0.8), 0.05)) scatter(dune, r, at.x, at.z, 3 + Math.floor(r() * 5), 0.12, free, tuftAt(r, DUNE, y));
+    for (const at of spots(Math.round(area * 0.3), 0.04)) scatter(stones, r, at.x, at.z, 2 + Math.floor(r() * 3), 0.09, free, stoneAt(r, ['#fff4ea', '#f6c9c0', '#e8dcc6', '#cfc6b5'], y, 0.3, 0.6));
+  } else if (kind === 'desert') {
+    for (const at of spots(Math.round(area * 0.5), 0.05)) scatter(stones, r, at.x, at.z, 2 + Math.floor(r() * 4), 0.1, free, stoneAt(r, ['#9a6a45', '#b07d52', '#7d5a3e', '#c4956a'], y, 0.5, 1.5));
+    for (const at of spots(Math.round(area * 0.2), 0.05)) scatter(dune, r, at.x, at.z, 2 + Math.floor(r() * 3), 0.07, free, tuftAt(r, DRY, y));
+  } else if (kind === 'snow') {
+    for (const at of spots(Math.round(area * 0.12), 0.05)) scatter(stones, r, at.x, at.z, 1 + Math.floor(r() * 3), 0.07, free, stoneAt(r, ['#8b8f96', '#a3a8ae'], y, 0.6, 1.4));
+  }
+  [inst(natGeo.tuft(), natMat.grass(), tufts, 'grass'), inst(natGeo.dune(), natMat.grass(), dune, kind === 'snow' ? null : 'dune'),
+    inst(natGeo.flower(), natMat.flower(), flowers, 'flower'), inst(natGeo.stone(), natMat.stone(), stones, kind === 'snow' ? null : 'ground')].forEach(o => o && D.add(o));
+}
+// Schilf und Seerosen am Ufer: Ellipse mit Halbachsen ax/az um (cx, cz), Wasserspiegel y; skip(winkel) lässt Stellen frei
+function shoreLife(G, r, cx, cz, ax, az, y, n, skip, pads = 0) {
+  const reeds = [], tails = [], lily = [], blooms = [];
+  for (let i = 0; i < n; i++) {
+    const a = r() * Math.PI * 2;
+    if (skip && skip(a)) continue;
+    const k = 0.9 + r() * 0.1, x = cx + Math.cos(a) * ax * k, z = cz + Math.sin(a) * az * k;
+    const m = 5 + Math.floor(r() * 7);
+    for (let j = 0; j < m; j++) {
+      const px = x + (r() - 0.5) * 0.16, pz = z + (r() - 0.5) * 0.16, s = 0.8 + r() * 0.7;
+      reeds.push({ x: px, y, z: pz, ry: r() * 6.3, s, c: pick(r, ['#5f8d3e', '#6d9a48', '#7fa654', '#56803a']) });
+      if (r() < 0.35) tails.push({ x: px, y: y + 0.15 * s, z: pz, s: 0.9 + r() * 0.3, c: '#6b4528' });
+    }
+  }
+  for (let i = 0; i < pads; i++) {
+    const a = r() * Math.PI * 2;
+    if (skip && skip(a)) continue;
+    const k = 0.5 + r() * 0.38, x = cx + Math.cos(a) * ax * k, z = cz + Math.sin(a) * az * k;
+    lily.push({ x, y: y + 0.002, z, ry: r() * 6.3, s: 0.7 + r() * 0.7, c: pick(r, ['#4f8f3c', '#5d9c46', '#3f7d35']) });
+    if (r() < 0.4) blooms.push({ x, y: y + 0.012, z, ry: r() * 6.3, sx: 1, sy: 0.6, sz: 1, c: pick(r, ['#ffd1dc', '#ffffff', '#f7a8c4']) });
+  }
+  [inst(natGeo.reed(), natMat.reed(), reeds, 'reed'), inst(natGeo.cattail(), natMat.stone(), tails, 'reed'),
+    inst(natGeo.pad(), natMat.pad(), lily, 'pad'), inst(natGeo.flower(), natMat.flower(), blooms, 'pad')].forEach(o => o && G.add(o));
+}
+function prachtLake() {
+  const G = new T.Group(), r = mulberry(515);
+  // am Steg (vorne rechts) bleibt das Ufer frei
+  shoreLife(G, r, -6.5 * K, -5.5 * K, 1.2 * K, 0.95 * K, 0.037, Math.round(42 * K), a => a > 0.8 && a < 2.0, Math.round(26 * K));
+  scene.add(G);
+}
+// Wasserstellen auf dem großen Brett (Koiteich, Oase)
+function prachtBig(kind, o, s, h) {
+  const r = mulberry(7100 + h * 13 + kind.length);
+  if (kind === 'koiPond') shoreLife(o, r, 0, 0, 0.95 * s, 0.62 * s, 0.037, 22, a => Math.abs(Math.sin(a)) > 0.85, 0);
+  else if (kind === 'oasis') shoreLife(o, r, 0, 0, 0.48 * s, 0.34 * s, 0.037, 14, null, 5);
+}
+// Jahreszeiten: im Winter liegt Schnee auf dem Boden, Gras wird im Herbst gelb
+function prachtSeason(idx, L) {
+  if (!NAT.seasonal.length) return;
+  const winter = idx === 3;
+  for (const { o, kind } of NAT.seasonal) {
+    if (kind === 'reed') continue;
+    o.visible = !winter;
+  }
+  if (NMAT.grass) setCol(NMAT.grass.color, winter ? '#ffffff' : L.grass || '#ffffff');
+  if (NMAT.reed) setCol(NMAT.reed.color, winter ? '#e6dcc0' : idx === 2 ? '#e8c879' : '#ffffff');
 }
 
 // ======================================================================
@@ -9216,8 +9822,8 @@ function applyKeys(dt) {
   if (keysDown.has('rotR')) d.theta -= 1.5 * dt;
   if (keysDown.has('tiltUp')) d.phi = clamp(d.phi - 0.9 * dt, 0.05, 1.32);
   if (keysDown.has('tiltDown')) d.phi = clamp(d.phi + 0.9 * dt, 0.05, 1.32);
-  if (keysDown.has('zoomIn')) { d.r = clamp(d.r * (1 - 1.1 * dt), 6, maxR()); camState.userZoomed = true; }
-  if (keysDown.has('zoomOut')) { d.r = clamp(d.r * (1 + 1.1 * dt), 6, maxR()); camState.userZoomed = true; }
+  if (keysDown.has('zoomIn')) { d.r = clamp(d.r * (1 - 1.1 * dt), minR(), maxR()); camState.userZoomed = true; }
+  if (keysDown.has('zoomOut')) { d.r = clamp(d.r * (1 + 1.1 * dt), minR(), maxR()); camState.userZoomed = true; }
 }
 function onKeyDown(e) {
   if (e.target.closest && e.target.closest('input, select, textarea')) return;
