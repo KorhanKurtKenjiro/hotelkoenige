@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>[hidden]{display:none!important}body{margin:0}</style></head><body>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#14110d"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="Hotelkönige"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" href="icon-192.png"><style>[hidden]{display:none!important}html,body{height:100%}body{margin:0}</style></head><body>
 <title>Hotelkönige</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +19,7 @@
   --gold-2: #f3d891;
   --gold-ink: #241a05;
   --fg: #f5efe2;
-  --muted: #b4a88f;
+  --muted: #c3b79e;
   --good: #7be3a6;
   --bad: #ff8f8f;
   --font-display: 'Limelight', 'Playfair Display', Georgia, serif;
@@ -53,8 +53,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .round { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); border: 1px solid var(--line-2); border-radius: 999px; padding: 4px 12px; background: var(--panel); white-space: nowrap; }
 .tools { margin-left: auto; display: flex; gap: 6px; flex-wrap: nowrap; justify-content: flex-end; }
 .topbar > * { flex-shrink: 0; }
-.topbar.c1 .tool:not(.ic) span { display: none; }
-.topbar.c1 .tool:not(.ic) { width: 36px; padding: 0; justify-content: center; }
+/* Wird es eng, verschwinden Beschriftungen schrittweise: zuerst die seltener gebrauchten, die Hilfe zuletzt */
+.topbar.c0 .tool[data-tool=hotels] span, .topbar.c0 .tool[data-tool=saves] span, .topbar.c0 .tool[data-tool=new] span { display: none; }
+.topbar.c0 .tool[data-tool=hotels], .topbar.c0 .tool[data-tool=saves], .topbar.c0 .tool[data-tool=new] { width: 36px; padding: 0; justify-content: center; }
+.topbar.c1 .tool:not(.ic):not(.help) span { display: none; }
+.topbar.c1 .tool:not(.ic):not(.help) { width: 36px; padding: 0; justify-content: center; }
+.topbar.c4 .tool.help span { display: none; }
+.topbar.c4 .tool.help { width: 36px; padding: 0; justify-content: center; }
 .topbar.c2 .logo { font-size: 30px; }
 .topbar.c2 { gap: 10px; }
 .topbar.c3 .round .sleft, .topbar.c3 .netchip .nl { display: none; }
@@ -82,7 +87,7 @@ body.menu .col, body.menu #labels, body.menu .camhint, body.menu .topbar .round,
 .pcard.out { opacity: .4; }
 .pline { display: flex; align-items: baseline; gap: 8px; }
 .pname { font-weight: 600; font-size: 15.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ptag { font-size: 11px; color: var(--muted); letter-spacing: .5px; }
+.ptag { font-size: 12px; color: var(--muted); letter-spacing: .5px; }
 .pcash { margin-left: auto; font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pworth { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 1px; }
 .pchips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
@@ -95,7 +100,7 @@ body.menu .col, body.menu #labels, body.menu .camhint, body.menu .topbar .round,
 .tray { position: relative; height: 112px; margin: -6px -8px 4px; border-radius: 10px; overflow: hidden;
   background: radial-gradient(120% 120% at 50% 0%, #2c4a33 0%, #183022 60%, #10201a 100%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.5), inset 0 8px 18px rgba(0,0,0,.45); }
 .tray canvas { width: 100%; height: 100%; display: block; }
-.tray-cap { position: absolute; left: 10px; bottom: 6px; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,.55); }
+.tray-cap { position: absolute; left: 10px; bottom: 6px; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,.55); }
 .thead { display: flex; align-items: center; gap: 10px; margin: 10px 0 4px; }
 .tdot { width: 14px; height: 14px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 0 2px #000, 0 0 0 3px var(--pc); flex: none; }
 .tname { font-family: var(--font-display); font-size: 22px; line-height: 1.1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -123,7 +128,7 @@ details.hr .opts { margin: 12px 0 4px; }
 .opts label { min-width: 0; }
 .opts select { width: 100%; min-width: 0; text-overflow: ellipsis; }
 .glbl { font-size: 11.5px; color: var(--gold); text-transform: uppercase; letter-spacing: 1.5px; margin: 8px 0 1px; font-weight: 600; }
-.hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+.hint { font-size: 13.5px; line-height: 1.45; color: var(--muted); margin: 8px 0 0; }
 .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: 12px; color: var(--muted); margin-top: 8px; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { width: 14px; height: 14px; border-radius: 3px; display: inline-grid; place-items: center; font-style: normal; font-size: 10px; font-weight: 700; color: #fff; }
@@ -214,6 +219,13 @@ html:not(.js) .loading .lhint { display: block; }
 /* Werkzeugleiste */
 .tgroup { display: flex; gap: 4px; padding: 3px; border-radius: 12px; background: rgba(12,10,8,.5); }
 .tool.ic { width: 36px; padding: 0; justify-content: center; }
+.tool { position: relative; }
+.tool.help { border-color: var(--line-2); color: var(--gold-2); }
+@media (hover: hover) {
+.tool[data-tip]:hover::after, .tool[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 30; pointer-events: none;
+  background: #15120e; color: var(--fg); border: 1px solid var(--line-2); border-radius: 8px; padding: 5px 9px; font-size: 12.5px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.tgroup:last-child .tool[data-tip]:hover::after, .tgroup:last-child .tool[data-tip]:focus-visible::after { left: auto; right: 0; transform: none; }
+}
 .tool.quit:hover { border-color: #b14a4a; color: #ffb4b4; }
 .logbtn { width: 100%; }
 .logbtn kbd, .logbox kbd { font: inherit; font-size: 11px; border: 1px solid var(--line-2); border-radius: 5px; padding: 0 6px; color: var(--muted); }
@@ -459,8 +471,8 @@ button.tier:hover:not(:disabled) { border-color: var(--gold); background: var(--
 .ptag.up { color: var(--good); }
 .ptag svg { vertical-align: -1px; }
 .fbtn { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; border-radius: 12px; }
-.fch { font-size: 10.5px; letter-spacing: .3px; font-weight: 600; }
-.fch.hi { color: var(--good); } .fch.md { color: #ffd166; } .fch.lo { color: #ff9f8f; }
+.fch { font-size: 11.5px; letter-spacing: .2px; font-weight: 600; }
+.fch.hi { color: var(--good); } .fch.md { color: #ffd166; } .fch.lo { color: var(--muted); font-weight: 500; }
 .pv { border: 1px solid rgba(123,227,166,.35); background: rgba(123,227,166,.07); border-radius: 10px; padding: 8px 10px; margin: 2px 0 10px; }
 .pvh { font-size: 11.5px; color: var(--good); letter-spacing: 1px; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
 .pvrow { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--muted); padding: 1px 0; }
@@ -473,7 +485,7 @@ button.tier:hover:not(:disabled) { border-color: var(--gold); background: var(--
 .dchip { display: grid; gap: 0; text-align: center; padding: 6px 4px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); font: inherit; cursor: pointer; }
 .dchip:hover:not(:disabled) { border-color: #9fd8ff; background: var(--panel-3); }
 .dchip:disabled { opacity: .35; cursor: not-allowed; }
-.dchip b { font-size: 12px; } .dchip span { font-size: 11.5px; color: var(--muted); } .dchip em { font-style: normal; font-size: 11.5px; color: var(--good); font-weight: 600; }
+.dchip b { font-size: 12px; } .dchip span { font-size: 12.5px; color: var(--muted); } .dchip em { font-style: normal; font-size: 11.5px; color: var(--good); font-weight: 600; }
 .danger { margin-top: 10px; border: 1px solid rgba(255,149,0,.35); background: rgba(255,149,0,.06); border-radius: 10px; padding: 8px 10px; font-size: 13px; }
 .danger.ok { border-color: rgba(123,227,166,.3); background: rgba(123,227,166,.06); color: var(--good); }
 .dgh { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #ffb35c; font-weight: 700; margin-bottom: 3px; }
@@ -498,7 +510,7 @@ button.tier:hover:not(:disabled) { border-color: var(--gold); background: var(--
 .ovtbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .ovtbl th { text-align: left; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--gold); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .ovtbl td { padding: 8px; border-bottom: 1px solid rgba(214,178,94,.1); vertical-align: top; font-variant-numeric: tabular-nums; }
-.ovtbl td small { display: block; color: var(--muted); font-size: 11.5px; }
+.ovtbl td small { display: block; color: var(--muted); font-size: 12.5px; }
 .ovtbl .stars { color: var(--gold-2); letter-spacing: -1px; }
 .ovtbl .hsb { font-size: 10px; font-weight: 700; color: #2a1d05; background: #f5c24c; border-radius: 999px; padding: 0 6px; margin-left: 4px; }
 .ovtbl .done { color: var(--good); }
@@ -530,6 +542,22 @@ button.tier:hover:not(:disabled) { border-color: var(--gold); background: var(--
 .toc button { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer; }
 .toc button:hover { color: var(--gold-2); border-color: var(--line-2); }
 .dialog.rules h4 { scroll-margin-top: 104px; }
+.dacts .howto { margin-right: auto; }
+.linkbtn { display: block; margin-top: 6px; padding: 0; border: 0; background: none; color: var(--gold-2); font: inherit; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; text-align: left; }
+.dialog.intro { width: min(520px, 100%); }
+.in-step { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12.5px; letter-spacing: 1px; text-transform: uppercase; }
+.in-step i { width: 22px; height: 4px; border-radius: 4px; background: var(--line); }
+.in-step i.on { background: var(--gold-2); }
+.in-step span { margin-left: 6px; }
+.in-head { display: flex; align-items: center; gap: 12px; margin: 16px 0 6px; }
+.in-head svg { width: 34px; height: 34px; color: var(--gold-2); flex: none; }
+.in-list { margin: 8px 0 18px; padding-left: 20px; display: grid; gap: 8px; font-size: 15.5px; line-height: 1.5; }
+.stickybar { position: sticky; bottom: -1px; z-index: 2; display: grid; margin-top: 8px; padding: 12px 0 4px; background: linear-gradient(rgba(19,17,13,0), #13110d 32%); }
+.stickybar .btn { background: #1b1813; }
+.btn.more { justify-content: space-between; font-size: 13px; padding: 7px 13px; border-style: dashed; }
+.recap-why { margin: 14px 0 0; padding: 10px 14px; border-radius: 10px; background: rgba(214,178,94,.08); border: 1px solid var(--line); color: var(--muted); font-size: 14px; line-height: 1.5; }
+.recap-why b { color: var(--gold-2); font-weight: 600; display: block; margin-bottom: 2px; }
+.legend-note { margin-top: 6px; }
 .quitopts { display: grid; gap: 10px; margin: 16px 0 6px; }
 .qopt { display: grid; gap: 4px; text-align: left; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); color: inherit; font: inherit; cursor: pointer; transition: border-color .15s, background .15s; }
 .qopt b { font-size: 16px; color: var(--gold-2); font-weight: 600; }
@@ -538,6 +566,99 @@ button.tier:hover:not(:disabled) { border-color: var(--gold); background: var(--
 .plabel .lents { display: inline-flex; align-items: center; gap: 2px; margin-left: 6px; padding-left: 6px; border-left: 1px solid rgba(255,255,255,.25); color: #cfe6ff; }
 .plabel .lents.none { color: #ff9f8f; }
 .plabel .lents svg { width: 11px; height: 11px; }
+
+/* ================= Handy-Modus =================
+   Hochformat: Brett füllt den Bildschirm, oben Spieler-Chips, unten die Aktionsleiste.
+   Querformat: Brett links, Aktionsleiste rechts. Alle Werkzeuge stecken im Menü. */
+.phmenu, .phgrip { display: none; }
+body.phone { overflow: hidden; touch-action: manipulation; }
+body.phone #app { height: 100%; overflow: hidden; }
+body.phone #stage { position: fixed; inset: 0; height: auto; }
+body.phone #stage::after { background: none; }
+body.phone .hud { position: fixed; inset: 0; padding: 0; }
+body.phone .camhint { display: none; }
+body.phone .topbar { position: fixed; top: 0; left: 0; right: 0; gap: 8px; padding: calc(8px + env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) 6px max(10px, env(safe-area-inset-left, 0px)); background: linear-gradient(rgba(12,10,8,.94), rgba(12,10,8,.75) 70%, rgba(12,10,8,0)); }
+body.phone .topbar .tools { display: none; }
+body.phone .topbar .logo { font-size: 21px; }
+body.phone .topbar.c1 .logo { display: none; }
+body.phone .round { font-size: 11px; padding: 4px 9px; letter-spacing: 1px; }
+body.phone .round .sleft { display: none; }
+body.phone .phmenu { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; min-height: 40px; padding: 0 14px; font: inherit; font-size: 13px; font-weight: 600; letter-spacing: .5px; cursor: pointer; }
+body.phone .col { position: fixed; margin: 0; }
+body.phone .col.left { top: calc(54px + env(safe-area-inset-top, 0px)); left: 0; right: 0; bottom: auto; width: auto !important; padding: 0 max(10px, env(safe-area-inset-right, 0px)) 0 max(10px, env(safe-area-inset-left, 0px)); }
+body.phone .col.left .panel { background: none; border: 0; padding: 0; backdrop-filter: none; }
+body.phone .col.left h3 { display: none; }
+body.phone .players { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+body.phone .players::-webkit-scrollbar { display: none; }
+body.phone .pcard { flex: 1 0 auto; max-width: 48%; min-width: 0; padding: 6px 10px 6px 12px; border-radius: 10px; background: rgba(28,24,19,.94); }
+body.phone .pcard.hasav { padding-left: 38px; }
+body.phone .pav { left: 10px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; }
+body.phone .pav .avatar, body.phone .pav svg { width: 22px; height: 22px; }
+body.phone .pper, body.phone .pworth, body.phone .pchips { display: none; }
+body.phone .pline { font-size: 13px; gap: 8px; align-items: center; }
+body.phone .pline .pcash { font-size: 14px; }
+body.phone .pname { font-size: 13px; font-weight: 600; }
+body.phone .pname { min-width: 0; max-width: 10ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.phone .col.right { overflow-y: auto; overscroll-behavior: contain; gap: 8px; scrollbar-width: none; }
+body.phone .col.right .panel { padding: 10px 12px; }
+body.phone .logpanel { display: none; }
+body.phone #deed:not(.deed-open) { display: none; }
+body.phone .tray { height: 62px; margin: -4px -6px 4px; }
+body.phone .tname { font-size: 18px; }
+body.phone .turnlog > div:nth-last-child(n+3) { display: none; }
+body.phone .btn { min-height: 46px; }
+body.phone .btn kbd, body.phone .logbtn kbd { display: none; }
+body.phone .fbtn { min-height: 46px; }
+body.phone .banner b { font-size: 40px; }
+body.phone .banner span { font-size: 15px; }
+body.phone .plabel .n { font-size: 13px; padding: 1px 7px; }
+body.phone .plabel .s { font-size: 10.5px; }
+body.phone .clabel { width: 18px; height: 18px; font-size: 11px; }
+/* Hochformat: Leiste unten */
+body.phone.ph-port .col.right { left: 0; right: 0; bottom: 0; top: auto; width: auto !important; max-height: 46vh; padding: 0 max(8px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+body.phone.ph-port.sheet-max .col.right { max-height: calc(100% - 64px - env(safe-area-inset-top, 0px)); }
+body.phone.ph-port .phgrip { display: block; position: sticky; top: 0; z-index: 4; flex: none; width: 100%; height: 24px; margin-bottom: -8px; border: 0; background: none; cursor: pointer; }
+body.phone.ph-port .phgrip::before { content: ''; display: block; width: 46px; height: 5px; border-radius: 5px; background: rgba(214,178,94,.7); margin: 9px auto 0; box-shadow: 0 1px 4px rgba(0,0,0,.6); }
+body.phone.ph-port .stickybar { bottom: calc(-9px - env(safe-area-inset-bottom, 0px)); padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+body.phone.ph-port .toast { top: auto; bottom: calc(46vh + 10px); }
+/* Querformat: Leiste rechts */
+body.phone.ph-land .topbar { right: auto; width: 56vw; background: none; padding-top: calc(6px + env(safe-area-inset-top, 0px)); }
+body.phone.ph-land .logo { display: none; }
+body.phone.ph-land .col.left { top: calc(50px + env(safe-area-inset-top, 0px)); right: auto; width: 56vw !important; }
+body.phone.ph-land .col.right { top: 0; right: 0; bottom: 0; left: auto; width: min(44vw, 420px) !important; max-height: none; padding: calc(6px + env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) 6px; background: rgba(10,8,6,.5); }
+body.phone.ph-land .tray { height: 52px; }
+body.phone.ph-land .toast { top: auto; bottom: 14px; left: 28vw; }
+/* Dialoge als große Blätter */
+body.phone .overlay { padding: calc(8px + env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+body.phone .dialog { padding: 18px 16px; border-radius: 16px; }
+body.phone .dialog h2 { font-size: 28px; }
+body.phone .dialog.sdlg { height: 100%; }
+body.phone .dacts { flex-wrap: wrap; }
+body.phone .dacts .btn { flex: 1 1 auto; justify-content: center; }
+body.phone .seg button, body.phone .segx button { min-height: 40px; }
+body.phone .evcard { top: 40%; }
+body.phone .logov { padding: calc(8px + env(safe-area-inset-top, 0px)) 8px calc(8px + env(safe-area-inset-bottom, 0px)); }
+body.phone .logbox { height: 100%; }
+body.phone .logbox footer { display: none; }
+body.phone .logbox header .btn kbd { display: none; }
+/* Querformat: niedrige Bildschirme, Dialoge kompakter */
+body.phone.ph-land .dialog { padding: 12px 16px; }
+body.phone.ph-land .dialog h2 { font-size: 24px; }
+body.phone.ph-land .dialog .lead { font-size: 14px; margin-bottom: 8px; }
+body.phone.ph-land .sdlg-head { padding: 10px 16px 6px !important; }
+body.phone.ph-land .sdlg-head .lead { display: none; }
+body.phone.ph-land .sfoot { padding: 8px 14px; }
+body.phone.ph-land .sfoot > .hint { display: none; }
+body.phone.ph-land .sfoot .btn { min-height: 40px; padding-block: 6px; }
+body.phone.ph-land .stabs button { padding-block: 7px; }
+body.phone.ph-land .sbody { grid-template-columns: 170px minmax(0, 1fr); }
+/* Menü */
+.phmenudlg { width: min(480px, 100%); }
+.mgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 12px; }
+.mitem { justify-content: space-between; min-height: 48px; font-size: 14.5px; }
+.mstate { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.mstate.on { color: var(--good); }
+@media (max-width: 360px) { .mgrid { grid-template-columns: 1fr; } }
 </style>
 
 <div class="loading" id="loading"><div>Hotelkönige<small>Das Brett wird aufgebaut …</small><div class="lhint">Bleibt es hier stehen? Dann zeigt gerade eine Vorschau die Datei an, zum Beispiel in Google Drive, der Dateien-App oder einer Mail. Eine Vorschau kann das Spiel nicht starten.<br><br>Am PC oder Mac: Datei herunterladen und mit einem Browser öffnen (Chrome, Edge, Firefox oder Safari).<br>Auf iPhone und iPad klappt es nur über einen Weblink zum Spiel.</div></div></div>
@@ -573,6 +694,7 @@ document.documentElement.className += ' js';
       <div class="round num" id="round">Runde 1</div>
       <div class="round num" id="pausechip" hidden>Pausiert</div>
       <button class="round num netchip" type="button" id="netchip" data-tool="net" hidden title="Online-Spiel: Plätze und Chat (C)"></button>
+      <button class="round phmenu" type="button" id="phmenu" aria-label="Menü öffnen"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menü</span></button>
       <div class="tools">
         <div class="tgroup">
           <button class="tool ic" type="button" data-tool="overview" title="Übersicht (Pos1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l9 4 9-4M3 12l9 4 9-4M12 3l9 4-9 4-9-4 9-4z"/></svg></button>
@@ -583,8 +705,8 @@ document.documentElement.className += ' js';
           <button class="tool ic" type="button" data-tool="sound" title="Soundeffekte" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 010 7"/></svg></button>
           <button class="tool ic" type="button" data-tool="music" title="Musik (M)" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button>
           <button class="tool ic" type="button" data-tool="fullscreen" title="Vollbild (F)" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
-          <button class="tool ic" type="button" data-tool="hotels" title="Hotels im Überblick (Tab)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg></button>
-          <button class="tool ic" type="button" data-tool="help" title="Regeln und Tasten (H)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .5c0 1.7-2.5 2-2.5 3.5M12 17h.01"/></svg></button>
+          <button class="tool lbl" type="button" data-tool="hotels" title="Hotels im Überblick (Tab)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span>Hotels</span></button>
+          <button class="tool lbl help" type="button" data-tool="help" title="So wird gespielt, alle Tasten (H)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .5c0 1.7-2.5 2-2.5 3.5M12 17h.01"/></svg><span>Hilfe</span></button>
         </div>
         <div class="tgroup">
           <button class="tool" type="button" data-tool="settings" title="Einstellungen und Hausregeln"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span>Einstellungen</span></button>
@@ -598,12 +720,13 @@ document.documentElement.className += ' js';
       <section class="panel"><h3>Hoteliers</h3><div class="players" id="players"></div></section>
     </aside>
     <aside class="col right">
+      <button class="phgrip" type="button" id="phgrip" aria-label="Leiste größer oder kleiner"></button>
       <section class="panel turn" id="turn">
         <div class="tray"><canvas id="dice"></canvas><div class="tray-cap" id="tray-cap"></div></div>
         <div id="turn-body"></div>
       </section>
       <section class="panel" id="deed"></section>
-      <section class="panel"><button class="btn logbtn" type="button" data-tool="log"><span>Protokoll öffnen</span><kbd>P</kbd></button></section>
+      <section class="panel logpanel"><button class="btn logbtn" type="button" data-tool="log"><span>Protokoll öffnen</span><kbd>P</kbd></button></section>
     </aside>
   </div>
   <div class="toast" id="toast" hidden></div>
@@ -2460,6 +2583,8 @@ function mix(a, b, t) {
   return '#' + ((1 << 24) | (c(16) << 16) | (c(8) << 8) | c(0)).toString(16).slice(1);
 }
 
+// Bedienung mit Fingern (Handy, Tablet ohne Maus): Texte und Ansicht passen sich an
+const TOUCH = (() => { try { return matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches; } catch (e) { return false; } })();
 const PLAYER_COLORS = ['#e8384f', '#2f86f6', '#2fc46b', '#f5c518'];
 const SAVE_KEY = 'hotel-3d-v5';
 let S = null;
@@ -3896,33 +4021,67 @@ const camState = {
   cur: { tx: 0, tz: 0.4, theta: 0, phi: 0.86, r: 21 },
   fitR: 21,
 };
+// Kompakte Ansicht für Handys und schmale Fenster: bis 900 Punkte Breite oder ein Handy im Querformat
+function phoneLayout() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const phone = w <= 900 || Math.min(w, h) <= 520;
+  const land = phone && w > h;
+  const b = document.body.classList;
+  const was = `${b.contains('phone')}${b.contains('ph-land')}`;
+  b.toggle('phone', phone); b.toggle('ph-land', land); b.toggle('ph-port', phone && !land);
+  if (!phone || land) b.remove('sheet-max');
+  return was !== `${phone}${land}`;
+}
+const portrait = () => document.body.classList.contains('ph-port');
+const maxR = () => Math.max(40 * K, camState.fitR * 1.25);
 function layoutInsets() {
-  if (window.innerWidth <= 900) return { L: 0, R: 0 };
+  const B = document.body.classList;
+  if (B.contains('phone')) {
+    const tb = document.querySelector('.topbar').getBoundingClientRect();
+    const pl = document.querySelector('.col.left').getBoundingClientRect();
+    const top = Math.max(tb.bottom, pl.bottom);
+    if (B.contains('ph-land')) {
+      const r = document.querySelector('.col.right').getBoundingClientRect();
+      return { L: 0, R: window.innerWidth - r.left, T: top * 0.8, B: 0 };
+    }
+    // Hochformat: feste Annahme für die Leiste unten, sonst würde das Brett bei jedem Schritt springen
+    return { L: 0, R: 0, T: top, B: Math.min(window.innerHeight * 0.36, 340) };
+  }
+  if (window.innerWidth <= 900) return { L: 0, R: 0, T: 0, B: 0 };
   const l = document.querySelector('.col.left').getBoundingClientRect();
   const r = document.querySelector('.col.right').getBoundingClientRect();
-  return { L: l.right + 8, R: window.innerWidth - r.left + 8 };
+  return { L: l.right + 8, R: window.innerWidth - r.left + 8, T: 0, B: 0 };
 }
 function resize() {
+  const changed = phoneLayout();
   const st = $('stage');
   const W = st.clientWidth, H = st.clientHeight;
   renderer.setSize(W, H, false);
   camera.aspect = W / H;
-  const { L, R } = layoutInsets();
-  const free = Math.max(320, W - L - R);
-  camera.setViewOffset(W, H, (R - L) / 2, -22, W, H);
+  const { L, R, T, B } = layoutInsets();
+  const free = Math.max(200, W - L - R), freeH = Math.max(160, H - T - B);
+  camera.setViewOffset(W, H, (R - L) / 2, -22 + (B - T) / 2, W, H);
   camera.updateProjectionMatrix();
-  // Abstand so wählen, dass das Brett in die freie Fläche passt
+  // Abstand so wählen, dass das Brett in die freie Fläche passt; im Hochformat liegt das Brett längs
   const vf = (camera.fov * Math.PI) / 180;
   const hf = 2 * Math.atan(Math.tan(vf / 2) * (free / H));
-  const need = Math.max((BW + 1.6) / 2 / Math.tan(hf / 2), (BD + 3) / 2 / Math.tan(vf / 2) * 0.82);
-  camState.fitR = clamp(need, 12, 34 * K);
+  const vff = 2 * Math.atan(Math.tan(vf / 2) * (freeH / H));
+  const need = Math.max((BW + 1.6) / 2 / Math.tan(hf / 2), (BD + 3) / 2 / Math.tan(vff / 2) * 0.82);
+  camState.fitR = clamp(need, 12, (document.body.classList.contains('phone') ? 70 : 34) * K);
+  // Wechsel zwischen PC-, Hoch- und Querformat-Ansicht: Kamera neu ausrichten
+  const key = document.body.className.match(/\b(phone|ph-land)\b/g)?.join() || 'pc';
+  if ((changed || view.layoutKey !== key) && !view.menu && view.layoutKey !== undefined) camPreset('overview');
+  view.layoutKey = key;
   if (!camState.userZoomed) camState.des.r = camState.fitR;
   if (tray.renderer) resizeTray();
 }
 function camPreset(kind) {
   camState.userZoomed = false;
-  if (kind === 'top') Object.assign(camState.des, { tx: 0, tz: 0, theta: 0, phi: 0.06, r: camState.fitR * 1.02 });
-  else Object.assign(camState.des, { tx: 0, tz: 0.4, theta: 0, phi: 0.86, r: camState.fitR });
+  const th = 0;
+  // kürzeste Drehung zum Ziel, statt einmal um das ganze Brett zu kreisen
+  const theta = camState.des.theta + Math.atan2(Math.sin(th - camState.des.theta), Math.cos(th - camState.des.theta));
+  if (kind === 'top') Object.assign(camState.des, { tx: 0, tz: 0, theta, phi: 0.06, r: camState.fitR * 1.02 });
+  else Object.assign(camState.des, { tx: 0, tz: portrait() ? 0 : 0.4, theta, phi: portrait() ? 0.78 : 0.86, r: camState.fitR });
 }
 function updateCamera(dt) {
   const k = 1 - Math.exp(-dt * 7);
@@ -3934,6 +4093,8 @@ function updateCamera(dt) {
   const near = clamp(c.r * 0.03, 0.1, 2);
   if (Math.abs(camera.near - near) > near * 0.05) { camera.near = near; camera.updateProjectionMatrix(); }
   camera.lookAt(c.tx, 0, c.tz);
+  // Nebel mit dem Abstand mitführen: von weit weg (Handy im Hochformat) sonst ein dunkler Schleier
+  if (scene.fog) { scene.fog.near = Math.max(30 * K, c.r + 8); scene.fog.far = scene.fog.near + 32 * K; }
 }
 const ptr = { down: false, btn: 0, x: 0, y: 0, sx: 0, sy: 0, moved: false, nx: 0, ny: 0, inside: false, dirty: true };
 canvasEl.addEventListener('contextmenu', e => e.preventDefault());
@@ -3965,7 +4126,7 @@ canvasEl.addEventListener('pointermove', e => {
   if (touches.size >= 2 && ptr.pinch) {
     const now = pinchInfo(), was = ptr.pinch;
     camState.userZoomed = true;
-    camState.des.r = clamp(camState.des.r * (was.d / now.d), 6, 40 * K);
+    camState.des.r = clamp(camState.des.r * (was.d / now.d), 6, maxR());
     panBy(now.mx - was.mx, now.my - was.my);
     ptr.pinch = now;
     return;
@@ -4005,7 +4166,7 @@ canvasEl.addEventListener('pointerleave', () => { ptr.inside = false; ptr.dirty 
 canvasEl.addEventListener('wheel', e => {
   e.preventDefault();
   camState.userZoomed = true;
-  camState.des.r = clamp(camState.des.r * (1 + Math.sign(e.deltaY) * Math.min(0.12, Math.abs(e.deltaY) * 0.0012)), 6, 40 * K);
+  camState.des.r = clamp(camState.des.r * (1 + Math.sign(e.deltaY) * Math.min(0.12, Math.abs(e.deltaY) * 0.0012)), 6, maxR());
 }, { passive: false });
 
 // ---------------- Auswahl per Maus ----------------
@@ -4385,16 +4546,29 @@ function updateLabels() {
     el._oy = Math.abs(jump) > 6 && Math.abs(jump) < 400 ? el._oy + jump * 0.3 : off;
     el.style.transform = `translate(${p.x.toFixed(1)}px, ${(p.y + el._oy).toFixed(1)}px) translate(-50%, -100%)`;
   }
+  // Figuren-Nummern weichen den Schildern aus, statt Hotelnamen zu verdecken (nächstgelegene freie Stelle)
+  const pins = [];
+  const hitsRect = (x, y, list) => list.some(r => Math.abs(r.x - x) < r.w / 2 + 11 && y > r.y - r.h - 2 && y - 20 < r.y + 2);
   W3.cars.forEach((car, i) => {
     const el = labelEls.cars[i];
     if (!el || !car.visible) return;
     const p = project(_tmp.set(car.position.x, car.position.y + 0.55, car.position.z));
-    el.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`;
+    const cands = PIN_CANDS;
+    let best = cands[0];
+    for (const c of cands) { const x = p.x + c[0], y = p.y + c[1]; if (!hitsRect(x, y, placed) && !pins.some(q => Math.hypot(q.x - x, q.y - y) < 18)) { best = c; break; } }
+    const x = p.x + best[0], y = p.y + best[1];
+    pins.push({ x, y });
+    el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
     const bb = labelEls.bubbles && labelEls.bubbles[i];
     if (bb) bb.style.transform = `translate(${p.x}px, ${p.y - 26}px) translate(-50%, -100%)`;
   });
 }
 const _tmp = new T.Vector3();
+const PIN_CANDS = (() => {
+  const out = [];
+  for (const dy of [0, 14, -16, 28, -32, 44, -48, 62]) for (const dx of [0, -22, 22, -42, 42, -64, 64]) out.push([dx, dy]);
+  return out.sort((a, b) => Math.hypot(a[0], a[1] * 1.2) - Math.hypot(b[0], b[1] * 1.2));
+})();
 
 // ---------------- Hauptschleife ----------------
 let lastT = performance.now();
@@ -4599,8 +4773,8 @@ function syncTray() {
   if (d.build || ['build', 'double', 'permitRoll', 'bauzwang'].includes(S.phase)) tray.build.visible = true;
   else tray.build.visible = false;
   const cap = [];
-  if (d.move) cap.push(`Zug ${d.move}`);
-  if (d.nights) cap.push(`Nächte ${d.nights}`);
+  if (d.move) cap.push(`Gewürfelt ${d.move}`);
+  if (d.nights) cap.push(`${d.nights} ${d.nights === 1 ? 'Nacht' : 'Nächte'}`);
   if (d.build) cap.push({ gruen: 'Genehmigt', rot: 'Abgelehnt', H: rulesOf(S).hFace === 'half' ? 'Halber Preis' : 'H wie Hotel: kostenlos', '2': 'Doppelter Preis' }[d.build]);
   $('tray-cap').textContent = cap.join(' · ');
   tray.dirty = true;
@@ -4771,9 +4945,9 @@ function renderPlayers() {
     const av = p.ai ? avatarSVG(p.persona, 30) : '';
     return `<div class="pcard ${i === st.cur && st.phase !== 'over' ? 'cur' : ''} ${p.out ? 'out' : ''} ${av ? 'hasav' : ''}" data-pi="${i}" style="--pc:${p.color}">
       ${av ? `<div class="pav" title="${esc(PERSONAS[p.persona] ? PERSONAS[p.persona].name + ', ' + PERSONAS[p.persona].title + ': ' + PERSONAS[p.persona].blurb : 'Computer')}">${av}</div>` : ''}
-      <div class="pline"><span class="pname">${esc(p.name)}</span><span class="pcash" data-cash="${i}">${p.out ? 'pleite' : fmt(cashShown[i] ?? p.cash)}</span></div>
+      <div class="pline"><span class="pname">${esc(p.name)}</span><span class="pcash" data-cash="${i}" title="Bargeld">${p.out ? 'pleite' : fmt(cashShown[i] ?? p.cash)}</span></div>
       ${p.ai ? `<div class="pper">${esc(personaTag(p))}</div>` : netTag(i)}
-      ${p.out ? '' : `<div class="pworth">Vermögen ${fmt(netWorth(st, i))}${debtLine(st, i)}${p.dep ? ' · ' + depositChip(p) : ''}</div>`}
+      ${p.out ? '' : `<div class="pworth"><span title="Bargeld, Grundstücke, Gebäude und Festgeld, abzüglich Schulden">Gesamtwert ${fmt(netWorth(st, i))}</span>${debtLine(st, i)}${p.dep ? ' · ' + depositChip(p) : ''}</div>`}
       ${own.length ? `<div class="pchips">${own.map(h => hotelChip(st, h)).join('')}</div>` : ''}
     </div>`;
   }).join('');
@@ -4813,7 +4987,7 @@ function costTag(st, cost, value) {
 }
 function hLegend(st) {
   const R = rulesOf(st);
-  return `<div class="legend"><span><i style="background:#22a85b">✓</i>3× genehmigt</span><span><i style="background:#d93a3f">✕</i>abgelehnt</span><span><i style="background:#2f6fe0">H</i>${R.hFace === 'half' ? 'halber Preis' : 'kostenlos'}</span><span><i style="background:#ef9a10">2</i>${R.doubleFail === 'force' ? 'doppelt, Bauzwang' : 'doppelt oder verzichten'}</span></div>`;
+  return `<div class="legend"><span><i style="background:#22a85b">✓</i>3 von 6: genehmigt</span><span><i style="background:#d93a3f">✕</i>1 von 6: abgelehnt</span><span><i style="background:#2f6fe0">H</i>1 von 6: ${R.hFace === 'half' ? 'halber Preis' : 'kostenlos'}</span><span><i style="background:#ef9a10">2</i>1 von 6: ${R.doubleFail === 'force' ? 'doppelt, Bauzwang' : 'doppelt oder verzichten'}</span></div><p class="hint legend-note">Der Würfel hat sechs Seiten: In 4 von 6 Fällen wird gebaut, einmal abgelehnt, einmal wird es doppelt so teuer.</p>`;
 }
 function breakDepositBtn(st) {
   const p = st.players[st.cur];
@@ -4835,6 +5009,7 @@ function stageLabel(h) {
   const s = S.hotels[h].stage;
   return s === 0 ? 'unbebaut' : s === maxStage(h) ? 'voll ausgebaut' : `bis ${stageName(h, s)}`;
 }
+function keepTurnScroll(fn) { const col = $('turn').parentElement, y = col ? col.scrollTop : 0; fn(); if (col) col.scrollTop = y; }
 function renderTurn() {
   const st = S, who = st.phase === 'over' && st.winner != null ? st.winner : actor(st), P = st.players[who];
   $('turn').style.setProperty('--pc', P.color);
@@ -4859,15 +5034,18 @@ function renderTurn() {
     case 'savings': c = savingsPanel(st); break;
     case 'buy':
       c = `<div class="btns">${st.data.opts.map(o => `<button class="btn" data-act="buyLand" data-hotel="${o.hotel}" ${o.ok ? '' : 'disabled'}><span><i class="sw" style="background:${HOTELS[o.hotel].color}"></i>${esc(HOTELS[o.hotel].name)}${o.from !== null ? ` <span class="ptag">${o.locked ? 'geschützt bis zur nächsten Runde' : 'von ' + esc(pname(st, o.from))}</span>` : ''}</span><span class="price">${fmt(o.price)}</span></button>`).join('')}
-        <button class="btn quiet" data-act="skip">Nichts kaufen</button></div>
-        ${st.data.opts.some(o => o.from !== null) ? `<p class="hint">Unbebaute Grundstücke anderer Spieler darfst du ${rulesOf(st).takeover === 'half' ? 'zum halben' : 'zum vollen'} Grundpreis übernehmen, auch ohne deren Zustimmung. Das lässt sich in den Einstellungen ändern.</p>` : '<p class="hint">Du kannst auch direkt auf das leuchtende Grundstück klicken.</p>'}`;
+        </div><div class="stickybar"><button class="btn quiet" data-act="skip">Nichts kaufen</button></div>
+        ${st.data.opts.some(o => o.from !== null) ? `<p class="hint">Unbebaute Grundstücke anderer Spieler darfst du ${rulesOf(st).takeover === 'half' ? 'zum halben' : 'zum vollen'} Grundpreis übernehmen, auch ohne deren Zustimmung. Das lässt sich in den Einstellungen ändern.</p>` : `<p class="hint">Du kannst auch direkt auf das leuchtende Grundstück ${TOUCH ? 'tippen' : 'klicken'}.</p>`}`;
       break;
     case 'build': {
       let rows = '';
       for (const h of st.data.permit) {
         const hs = st.hotels[h];
         rows += `<div class="glbl"><i class="sw" style="background:${HOTELS[h].color}"></i>${esc(HOTELS[h].name)}<span class="gl-ents">${DOOR_SVG}${hs.ents.length}</span></div>`;
+        const more = buildingStages(h) - hs.stage;
+        const open = view.buildMore && view.buildMore.turn === st.turn && view.buildMore.set.has(h);
         for (let k = 1; hs.stage + k <= buildingStages(h); k++) {
+          if (k === 2 && !open) { rows += `<button class="btn quiet more" data-ui="buildmore" data-hotel="${h}"><span>Mehr auf einmal bauen (bis ${more} Bauabschnitte)</span><span class="price">▾</span></button>`; break; }
           const cost = costRange(h, hs.stage, k);
           const a = stageName(h, hs.stage + 1), b = stageName(h, hs.stage + k);
           const tg = costTag(st, cost, cost);
@@ -4879,8 +5057,9 @@ function renderTurn() {
         rows += `<div class="glbl"><i class="sw" style="background:${HOTELS[h].color}"></i>${esc(HOTELS[h].name)}</div>
           <button class="btn" data-act="buildFacility" data-hotel="${h}" data-preview="${h},${st.hotels[h].stage},1,${HOTELS[h].fac}"><span>${esc(HOTELS[h].facName)} <span class="ptag">ohne Würfel</span>${buildDeltaTag(st, h, st.hotels[h].stage, 1)}${tg.tag}</span><span class="price">${fmt(HOTELS[h].fac)}</span></button>`;
       }
-      c = `<div class="btns">${rows}<button class="btn quiet" data-act="skip">Nicht bauen</button></div>`;
-      if (st.data.permit.length) c += `<p class="hint">Fahre mit der Maus über einen Antrag, um die Gebäude auf dem Brett zu sehen.${st.players[st.cur].permitVoucher ? ' Dein Gutschein vom Bauamt sorgt für eine sichere Genehmigung.' : ' Der Baustein-Würfel entscheidet:'}</p>${hLegend(st)}`;
+      c = `<div class="btns">${rows}</div>`;
+      if (st.data.permit.length) c += `<p class="hint">${TOUCH ? '' : 'Fahre mit der Maus über einen Antrag, um die Gebäude auf dem Brett zu sehen. '}${st.players[st.cur].permitVoucher ? 'Dein Gutschein vom Bauamt sorgt für eine sichere Genehmigung.' : 'Der Baustein-Würfel entscheidet:'}</p>${hLegend(st)}`;
+      c += `<div class="stickybar"><button class="btn quiet" data-act="skip">Nicht bauen</button></div>`;
       break;
     }
     case 'permitRoll': {
@@ -4901,18 +5080,18 @@ function renderTurn() {
       const others = ownedHotels(st, st.cur).filter(h => h !== bz.hotel);
       c = `<p class="hint" style="margin-top:0">Bauzwang: Es fehlen <b class="num">${fmt(short)}</b>. Besorge das Geld, dann wird automatisch gebaut. Oder gib dieses Grundstück ab, dann entfällt der Bau.</p>
         <div class="btns" style="margin-top:10px">${room > 0 ? `<button class="btn" data-act="bauCredit"><span>Baukredit aufnehmen <span class="ptag">${rates(st).bau} % pro Umlauf</span></span><span class="price">${fmt(Math.min(room, ceil500(short)))}</span></button>` : `<p class="hint">${creditOn(st) ? 'Dein Kreditrahmen ist ausgeschöpft.' : 'Kredite sind ausgeschaltet.'}</p>`}${breakDepositBtn(st)}</div>
-        ${others.length ? `<div class="glbl">Anderes Grundstück abgeben</div>${saleButtons(st, others)}` : ''}
-        <div class="glbl">Dieses Grundstück abgeben</div>${saleButtons(st, [bz.hotel], { h: bz.hotel, t: 'Bau entfällt' })}`;
+        <div class="glbl">Dieses Grundstück abgeben, dann entfällt der Bau</div>${saleButtons(st, [bz.hotel], { h: bz.hotel, t: 'Bau entfällt' })}
+        ${others.length ? `<div class="glbl">Oder ein anderes Grundstück abgeben</div>${saleButtons(st, others)}` : ''}`;
       break;
     }
     case 'halfbuild':
       c = `<div class="btns">${st.data.hotels.map(h => {
         const list = stageCost(h, st.hotels[h].stage + 1), cost = round50(list / 2), tg = costTag(st, cost, list);
         return `<button class="btn" data-act="halfBuild" data-hotel="${h}" data-preview="${h},${st.hotels[h].stage},1,${cost}" ${tg.ok ? '' : 'disabled'}><span><i class="sw" style="background:${HOTELS[h].color}"></i>${esc(HOTELS[h].name)}: ${esc(stageName(h, st.hotels[h].stage + 1))}${buildDeltaTag(st, h, st.hotels[h].stage, 1)}${tg.tag}</span><span class="price">${fmt(cost)} <s>${fmt(list)}</s></span></button>`;
-      }).join('')}<button class="btn quiet" data-act="skip">Verzichten</button></div>`;
+      }).join('')}</div><div class="stickybar"><button class="btn quiet" data-act="skip">Verzichten</button></div>`;
       break;
     case 'freebuild':
-      c = `<div class="btns">${st.data.hotels.map(h => `<button class="btn" data-act="freeBuild" data-hotel="${h}" data-preview="${h},${st.hotels[h].stage},1,0"><span><i class="sw" style="background:${HOTELS[h].color}"></i>${esc(HOTELS[h].name)}: ${esc(stageName(h, st.hotels[h].stage + 1))}${buildDeltaTag(st, h, st.hotels[h].stage, 1)}</span><span class="price">gratis</span></button>`).join('')}<button class="btn quiet" data-act="skip">Verzichten</button></div>`;
+      c = `<div class="btns">${st.data.hotels.map(h => `<button class="btn" data-act="freeBuild" data-hotel="${h}" data-preview="${h},${st.hotels[h].stage},1,0"><span><i class="sw" style="background:${HOTELS[h].color}"></i>${esc(HOTELS[h].name)}: ${esc(stageName(h, st.hotels[h].stage + 1))}${buildDeltaTag(st, h, st.hotels[h].stage, 1)}</span><span class="price">gratis</span></button>`).join('')}</div><div class="stickybar"><button class="btn quiet" data-act="skip">Verzichten</button></div>`;
       break;
     case 'entrance': {
       const hs = st.data.hotels;
@@ -4929,10 +5108,10 @@ function renderTurn() {
           const lbl = fieldLabel(i, view.entHotel);
           seen[lbl] = (seen[lbl] || 0) + 1;
           const ch = fieldChance(st, i);
-          return `<button class="fbtn" data-act="placeEntrance" data-hotel="${view.entHotel}" data-space="${i}" data-hl="${i}">${esc(lbl)}<span class="fch ${ch === 'hoch' ? 'hi' : ch === 'niedrig' ? 'lo' : 'md'}" title="Wie wahrscheinlich ein Gegner bald hier hält">Chance ${ch}</span></button>`;
-        }).join('')}</div><p class="hint">Fahre über ein Feld in der Liste, dann leuchtet es auf dem Brett. Oder klicke direkt auf einen goldenen Pfeil. Die Nummern stehen auf den Straßenfeldern.</p>`;
+          return `<button class="fbtn" data-act="placeEntrance" data-hotel="${view.entHotel}" data-space="${i}" data-hl="${i}">${esc(lbl)}<span class="fch ${ch === 'hoch' ? 'hi' : ch === 'niedrig' ? 'lo' : 'md'}" title="Wie wahrscheinlich ein Gegner bald hier hält">${ch === 'hoch' ? 'bald viele Gäste' : ch === 'niedrig' ? 'bald wenige Gäste' : 'bald einige Gäste'}</span></button>`;
+        }).join('')}</div><p class="hint">${TOUCH ? 'Tippe auf ein Feld in der Liste oder direkt auf einen goldenen Pfeil auf dem Brett.' : 'Fahre über ein Feld in der Liste, dann leuchtet es auf dem Brett. Oder klicke direkt auf einen goldenen Pfeil. Die Nummern stehen auf den Straßenfeldern.'}</p>`;
       }
-      c += `<div class="btns" style="margin-top:10px"><button class="btn quiet" data-act="skip">Keinen Eingang setzen</button></div>`;
+      c += `<div class="stickybar"><button class="btn quiet" data-act="skip">Keinen Eingang setzen</button></div>`;
       break;
     }
     case 'debt': {
@@ -4947,7 +5126,7 @@ function renderTurn() {
       const a = st.auction;
       const base = a.high === null ? a.min : a.price + 100, ref = a.high === null ? a.min : a.price;
       const steps = [...new Set([base, ref + 500, ref + 1000, ref + 2500])].filter(v => v >= base && v <= P.cash);
-      c = `<p class="hint" style="margin-top:0">${a.bank ? `Die Bank versteigert das freie Grundstück ${esc(HOTELS[a.hotel].name)}, weil jeder einmal die Gelegenheit hatte und keiner gekauft hat. Grundpreis ${fmt(HOTELS[a.hotel].land)}.` : `${esc(HOTELS[a.hotel].name)} von ${esc(pname(st))}, ${esc(stageLabel(a.hotel))}. Listenwert ${fmt(invested(st, a.hotel))}.`}<br>${a.high === null ? `Noch kein Gebot, Mindestgebot ${fmt(a.min)}.` : `Höchstgebot <b class="num">${fmt(a.price)}</b> von ${esc(pname(st, a.high))}.`}</p>
+      c = `<p class="hint" style="margin-top:0">${a.bank ? `Die Bank versteigert das freie Grundstück ${esc(HOTELS[a.hotel].name)}, weil jeder einmal die Gelegenheit hatte und keiner gekauft hat. Grundpreis ${fmt(HOTELS[a.hotel].land)}.` : `${esc(HOTELS[a.hotel].name)} von ${esc(pname(st))}, ${esc(stageLabel(a.hotel))}. Grund und Gebäude kosten zusammen ${fmt(invested(st, a.hotel))}.`}<br>${a.high === null ? `Noch kein Gebot, Mindestgebot ${fmt(a.min)}.` : `Höchstgebot <b class="num">${fmt(a.price)}</b> von ${esc(pname(st, a.high))}.`}</p>
         <div class="btns" style="margin-top:10px">${steps.map(v => `<button class="btn" data-act="bid" data-amount="${v}"><span>Bieten</span><span class="price">${fmt(v)}</span></button>`).join('')}<button class="btn quiet" data-act="pass">Aussteigen</button></div>`;
       break;
     }
@@ -4981,7 +5160,7 @@ function renderDeed() {
   if (h === null && st.phase === 'auction') h = st.auction.hotel;
   $('deed').classList.toggle('deed-open', h !== null && h !== undefined);
   if (h === null || h === undefined) {
-    $('deed').innerHTML = `<h3>Hotelkarte</h3><p class="hint" style="margin:0">Fahre mit der Maus über ein Grundstück, um Baukosten und Übernachtungspreise zu sehen. Ein Klick hält die Karte fest.</p>`;
+    $('deed').innerHTML = `<h3>Hotelkarte</h3><p class="hint" style="margin:0">${TOUCH ? 'Tippe auf ein Grundstück, um Baukosten und Übernachtungspreise zu sehen.' : 'Fahre mit der Maus über ein Grundstück, um Baukosten und Übernachtungspreise zu sehen. Ein Klick hält die Karte fest.'}</p>`;
     return;
   }
   const H = HOTELS[h], hs = st.hotels[h];
@@ -5159,6 +5338,12 @@ document.addEventListener('click', e => {
   if (!b || b.disabled) return;
   if (b.dataset.ui === 'new') return netIsGuest() ? toast('Ein neues Spiel startet der Gastgeber.') : openSetup();
   if (b.dataset.ui === 'nettake') return netTakeOver(+b.dataset.seat);
+  if (b.dataset.ui === 'buildmore') {
+    if (!view.buildMore || view.buildMore.turn !== S.turn) view.buildMore = { turn: S.turn, set: new Set() };
+    view.buildMore.set.add(+b.dataset.hotel);
+    keepTurnScroll(renderTurn);
+    return;
+  }
   if (b.dataset.ui === 'enthotel') { view.entHotel = +b.dataset.hotel; view.sel = view.entHotel; renderTurn(); renderDeed(); updateHighlights(); return; }
   if (b.dataset.ui === 'bank') return openBank();
   if (b.dataset.ui === 'undo') return doUndo();
@@ -5304,9 +5489,10 @@ function openSetup(first = false, keep = null) {
         <label>Startkapital<select id="o-cash">${[[0, '12.000 € (zu zweit 25.000 €)'], [15000, '15.000 €'], [20000, '20.000 €']].map(([v, t]) => `<option value="${v}" ${v === s.cash ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
         <label class="check"><input type="checkbox" id="o-fs" ${settings.fullscreenOnStart ? 'checked' : ''}> Im Vollbild spielen</label>
       </div>
-      <div class="hrbar"><div><b>Einstellungen</b><span class="hint">${presetOf(s.rules) ? `Regeln: Paket „${esc(PRESETS.find(p => p.id === presetOf(s.rules)).title)}“` : 'Eigene Regeln'}${tot ? ` · ${tot} ${tot === 1 ? 'Regel weicht' : 'Regeln weichen'} vom Standard ab` : ''}</span></div><div class="hrbtns"><button class="btn" type="button" id="hr-open">Regeln</button><button class="btn" type="button" id="look-open" title="Grafik, Lautstärke, Würfelgeräusch, Hilfen">Darstellung &amp; Ton</button></div></div>
+      <div class="hrbar"><div><b>Einstellungen</b><span class="hint">${presetOf(s.rules) ? `Regeln: Paket „${esc(PRESETS.find(p => p.id === presetOf(s.rules)).title)}“` : 'Eigene Regeln'}${tot ? ` · ${tot} ${tot === 1 ? 'Regel weicht' : 'Regeln weichen'} vom Standard ab` : ''}</span>${!introSeen() && presetOf(s.rules) !== 'relaxed' ? '<button class="linkbtn" type="button" id="relaxed-go">Erste Partie? Paket „Entspannt“ nehmen</button>' : ''}</div><div class="hrbtns"><button class="btn" type="button" id="hr-open">Hausregeln</button><button class="btn" type="button" id="look-open" title="Grafik, Lautstärke, Würfelgeräusch, Hilfen">Darstellung &amp; Ton</button></div></div>
       ${netSetupBoxHTML(s)}
       <div class="dacts">
+        <button class="btn quiet howto" type="button" id="howto">So wird gespielt</button>
         ${saved && saved.S.phase !== 'over' && first ? '<button class="btn" type="button" id="resume">Letztes Spiel fortsetzen</button>' : ''}
         ${first ? '' : '<button class="btn quiet" type="button" id="cancel" data-close>Abbrechen</button>'}
         <button class="btn primary" type="button" id="start">Spiel starten</button>
@@ -5363,7 +5549,7 @@ function openSetup(first = false, keep = null) {
       if (row.ai) {
         if (!row.persona) row.persona = freePersona(s.rows);
         if (!row.level) row.level = 'normal';
-        if (row.name === 'Du' || /^Spieler \d$/.test(row.name)) row.name = PERSONAS[row.persona] ? PERSONAS[row.persona].name : row.name;
+        if (row.name === 'Du' || /^Spieler( \d)?$/.test(row.name)) row.name = PERSONAS[row.persona] ? PERSONAS[row.persona].name : row.name;
       }
       drawAll();
     }
@@ -5380,11 +5566,13 @@ function openSetup(first = false, keep = null) {
     else if (t.id === 'net-host') {
       sync(); sfx.unlock(); NET.err = '';
       // „Du“ wäre für die Mitspieler missverständlich
-      s.rows.forEach(r => { if (!r.ai && !r.online && r.name === 'Du') r.name = netPref('name') || 'Gastgeber'; });
+      s.rows.forEach(r => { if (!r.ai && !r.online && (r.name === 'Du' || /^Spieler( \d)?$/.test(r.name))) r.name = netPref('name') || 'Gastgeber'; });
       drawAll();
       netHost(); netLobbyAttach(s, redraw); drawAll();
     }
     else if (t.id === 'net-close') { sync(); netClose(); s.rows.forEach(r => { r.online = false; r.client = null; }); drawAll(); }
+    else if (t.id === 'relaxed-go') { sync(); s.rules = presetRules(PRESETS.find(p => p.id === 'relaxed')); drawAll(); toast('Regelpaket „Entspannt“ gewählt'); }
+    else if (t.id === 'howto') { sync(); openRules({ rules: s.rules, limit: s.limit, onClose: () => openSetup(first, s) }); }
     else if (t.id === 'net-copy') netCopyCode(t);
     else if (t.id === 'net-join') { sync(); leaveSetup(); NET.err = ''; netJoinDialog(() => openSetup(first, s)); }
     else if (t.id === 'cancel') { leaveSetup(); closeModal(); netSyncAll(); }
@@ -5407,7 +5595,7 @@ function openSetup(first = false, keep = null) {
     }
   };
 }
-const DEFAULT_SEATS = [{ name: 'Du', ai: false }, { name: 'Bertram', ai: true, persona: 'bertram', level: 'normal' }, { name: 'Clara', ai: true, persona: 'clara', level: 'normal' }];
+const DEFAULT_SEATS = [{ name: 'Spieler 1', ai: false }, { name: 'Bertram', ai: true, persona: 'bertram', level: 'normal' }, { name: 'Clara', ai: true, persona: 'clara', level: 'normal' }];
 // Ältere Aufstellungen: Charakter aus dem Namen ableiten
 function fillSeat(p) {
   if (p.ai && !p.persona) p.persona = PERSONA_KEYS.find(k => PERSONAS[k].name === p.name) || 'random';
@@ -5451,6 +5639,7 @@ function startGame() {
   if (shuffled) S.log.push({ t: `Ausgelost: Es spielen ${S.players.map(p => p.name).join(', ')}, in dieser Reihenfolge.`, k: 'sys', turn: 0, p: 0, r: 1 });
   restore();
   banner(shuffled ? 'Ausgelost!' : 'Willkommen', `${S.players[0].name} beginnt`, '#f3d891');
+  if (!introSeen() && S.players.some((p, i) => localHuman(i))) setTimeout(() => { if (!$('modal').innerHTML) openIntro(); }, D(900));
 }
 function restore() {
   if (view.menu) setMenu(false);
@@ -5489,9 +5678,11 @@ function showGameOver() {
   if ($('go-new')) $('go-new').onclick = () => openSetup();
   if ($('go-again')) $('go-again').onclick = () => { $('modal').innerHTML = ''; view.overShown = null; startGame(); };
 }
-function openRules() {
+// Spielanleitung; aus dem Startmenü mit den dort gewählten Regeln (opt.rules) und Rückweg (opt.onClose)
+function openRules(opt = {}) {
   clearTimeout(view.aiTimer);
-  const R = rulesOf(S), r = rates(S), tiers = savingsTiers(S);
+  const st = opt.rules ? { ...S, rules: opt.rules, roundLimit: opt.limit ?? 0 } : S;
+  const R = rulesOf(st), r = rates(st), tiers = savingsTiers(st);
   const credit = R.credit === 'on';
   const sec = (id, title, body) => `<h4 id="ru-${id}">${title}</h4>${body}`;
   const TOC = [['ziel', 'Ziel'], ['zug', 'Ein Zug'], ['felder', 'Felder'], ['bauen', 'Bauen'], ['eingaenge', 'Eingänge'], ['nacht', 'Übernachten'], ['bank', 'Bank'], ['geldnot', 'Geldnot'], ['karten', 'Karten'], ['gegner', 'Computer'], ['hilfen', 'Hilfen'], ['online', 'Online'], ['regeln', 'Hausregeln'], ['tasten', 'Tasten']];
@@ -5502,7 +5693,7 @@ function openRules() {
     <h2 id="ru-t">So wird gespielt</h2>
     <p class="lead">Kaufe Grundstücke, baue Hotels Stück für Stück und setze Eingänge an die Straße. Wer bei dir übernachtet, zahlt. Die Regeln unten passen sich an die eingestellten Hausregeln an.</p>
     <nav class="toc">${TOC.map(([id, t]) => `<button type="button" data-goto="ru-${id}">${t}</button>`).join('')}</nav>
-    ${sec('ziel', 'Ziel', `<ul><li>${S.roundLimit ? `Nach ${S.roundLimit} Runden gewinnt, wer das größte Vermögen hat: Bargeld, Hotels und Festgeld, abzüglich Schulden.` : 'Wer als Letzter noch nicht pleite ist, gewinnt.'}</li><li>Gewinnen heißt: Hotels bauen, Eingänge setzen und die Gegner bei dir übernachten lassen.</li></ul>`)}
+    ${sec('ziel', 'Ziel', `<ul><li>${st.roundLimit ? `Nach ${st.roundLimit} Runden gewinnt, wer das größte Vermögen hat: Bargeld, Hotels und Festgeld, abzüglich Schulden.` : 'Wer als Letzter noch nicht pleite ist, gewinnt.'}</li><li>Gewinnen heißt: Hotels bauen, Eingänge setzen und die Gegner bei dir übernachten lassen.</li></ul>`)}
     ${sec('zug', 'Ein Zug', `<ul><li><b>Würfeln</b> und mit dem Auto die Straße entlangfahren. Auf jedem Feld steht nur ein Auto, sonst rückst du auf das nächste freie Feld.</li>
       <li>Erst wird abgerechnet, was unterwegs passiert: Bank-Bogen, Rathaus-Bogen. Dann zählt das Feld, auf dem du stehst.</li>
       <li>Stehst du vor einem fremden Eingang, übernachtest du dort. Danach kommt das Feld selbst.</li><li>Mit <b>Zug beenden</b> ist der Nächste dran.</li></ul>`)}
@@ -5525,7 +5716,7 @@ function openRules() {
       <li>Bei der Feldwahl steht dabei, ob Gegner dort bald halten: Chance hoch, mittel oder niedrig.</li></ul>`)}
     ${sec('nacht', 'Übernachten', `<ul><li>Wer an einem fremden Eingang hält, würfelt die Nächte und zahlt Nächte mal Preis der aktuellen Ausbaustufe.</li>
       <li><b>Pension Rosi</b> (50 € pro Nacht) und <b>Gasthof Linde</b> (100 €) gehören der Bank. Dort zahlt jeder, aber wenig.</li>
-      ${seasonIdx(S) >= 0 ? `<li><b>Jahreszeiten</b>: Alle ${R.seasonLen} Runden wechselt die Saison. Hochsaison bringt +50 %${R.seasons === 'strong' ? ', die Saison gegenüber −25 %' : ''}. Frühling: Kirschblüte, Kasbah. Sommer: Möwennest, Lagune. Herbst: Wüstenrose, Grand Palais. Winter: Alpenglühen, Polarstern.</li>` : ''}</ul>`)}
+      ${seasonIdx(st) >= 0 ? `<li><b>Jahreszeiten</b>: Alle ${R.seasonLen} Runden wechselt die Saison. Hochsaison bringt +50 %${R.seasons === 'strong' ? ', die Saison gegenüber −25 %' : ''}. Frühling: Kirschblüte, Kasbah. Sommer: Möwennest, Lagune. Herbst: Wüstenrose, Grand Palais. Winter: Alpenglühen, Polarstern.</li>` : ''}</ul>`)}
     ${sec('bank', 'Bank', `<ul><li>Unter dem goldenen <b>Bank</b>-Bogen gibt es jedes Mal ${fmt(BANK_BONUS)}${R.endBank === 'classic' ? ', außer im Endspiel, wenn von drei oder vier Spielern nur noch zwei übrig sind' : ''}.</li>
       ${credit ? `<li><b>Baukredit</b> (${r.bau} % pro Umlauf) springt beim Bauen ein, wenn das Geld nicht reicht. <b>Notkredit</b> (${r.not} %) gibt es nur in der Geldnot. Alle Schulden zusammen höchstens die Hälfte deines Besitzwerts.</li>
       <li><b>Zinsuhr</b>: Zinsen laufen pro gefahrenem Feld mit und sind an der Bank fällig, aufgerundet auf 50 €. Je früher du zurückzahlst, desto weniger zahlst du. ${R.interestPay === 'strict' ? 'Wer sie nicht bar zahlen kann, gerät in Geldnot.' : 'Fehlt das Bargeld, kommen sie auf den Kredit (Zinseszins).'}</li>
@@ -5536,7 +5727,7 @@ function openRules() {
       <li><b>Versteigern</b>: Mindestgebot ist der halbe Grundpreis plus ${R.auctionAdd} % des Gesamtwerts. Der Käufer bekommt alles samt Gebäuden und Eingängen. Bietet niemand, zahlt die Bank den halben Grundpreis.</li>
       ${credit ? '<li>Lastet auf dem Verkauften ein Kredit, wird zuerst die offene Rechnung bezahlt. Den Rest verrechnet die Bank mit dem Kredit, bis du wieder im Rahmen bist.</li>' : ''}
       <li>Ohne Grundstücke, Festgeld und Geld ist man pleite.</li></ul>`)}
-    ${sec('karten', 'Ereigniskarten', R.events === 'on' ? `<ul><li>16 Karten wie Messe, Lottogewinn, Sturm, Steuerprüfung, Gutschein vom Bürgermeister oder Abkürzung zum Start.${seasonIdx(S) >= 0 ? ' Mit Jahreszeiten kommen vier Saisonkarten dazu, die nur in ihrer Saison gezogen werden.' : ''}</li></ul>` : '<ul><li>In diesem Spiel ausgeschaltet.</li></ul>')}
+    ${sec('karten', 'Ereigniskarten', R.events === 'on' ? `<ul><li>16 Karten wie Messe, Lottogewinn, Sturm, Steuerprüfung, Gutschein vom Bürgermeister oder Abkürzung zum Start.${seasonIdx(st) >= 0 ? ' Mit Jahreszeiten kommen vier Saisonkarten dazu, die nur in ihrer Saison gezogen werden.' : ''}</li></ul>` : '<ul><li>In diesem Spiel ausgeschaltet.</li></ul>')}
     ${sec('gegner', 'Computergegner', `<ul><li>Acht Charaktere mit eigenem Stil: Bertram der Baulöwe, Clara die Buchhalterin, Dora die Grande Dame, Emil der Schnäppchenjäger, Frieda die Füchsin, Gustav der Glücksritter, Harald der Finanzhai und Ines die Maklerin.</li>
       <li>Dazu drei Stufen: Leicht, Normal, Schwer. Kein Computer kennt kommende Würfe.</li><li>Ihre Sprüche erscheinen als Sprechblasen über den Autos, einstellbar unter Darstellung & Ton.</li></ul>`)}
     ${sec('hilfen', 'Hilfen', `<ul><li><b>Hotels im Überblick</b> (Tab, Tabellen-Knopf oben oder Klick auf eine Spielerkarte): Ausbau, Eingänge, Preis, nächster Ausbau, Ertrag im Schnitt und Einnahmen.</li>
@@ -5558,7 +5749,7 @@ function openRules() {
       <li>Beim Spielstart lässt sich die Reihenfolge auslosen. Wer zuletzt beginnt, hat sonst bei drei Spielern einen kleinen Vorteil.</li></ul>`)}
     ${sec('tasten', 'Tasten', keysHTML())}
     <div class="dacts"><button class="btn primary" type="button" data-close id="ru-c">Verstanden</button></div></div></div>`;
-  $('ru-c').onclick = () => closeModal();
+  $('ru-c').onclick = () => (opt.onClose ? opt.onClose() : closeModal());
   $('modal').onclick = e => {
     const b = e.target.closest('[data-goto]');
     if (b) { const el = document.getElementById(b.dataset.goto); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
@@ -5567,6 +5758,7 @@ function openRules() {
 
 // ---------------- Start ----------------
 async function boot(data) {
+  phoneLayout();
   try { initRenderer(); } catch (e) {
     $('loading').setAttribute('data-err', '1');
     $('loading').innerHTML = '<div class="nogl"><div>Hotelkönige</div><small>Dieser Browser kann kein WebGL darstellen. Bitte aktiviere die Hardware-Beschleunigung oder nutze einen aktuellen Chrome, Edge, Firefox oder Safari.</small></div>';
@@ -5584,6 +5776,7 @@ async function boot(data) {
   applyQuality();
   window.addEventListener('resize', resize);
   new ResizeObserver(resize).observe($('stage'));
+  document.querySelectorAll('.tool[title]').forEach(b => { b.dataset.tip = b.title; b.setAttribute('aria-label', b.title); b.removeAttribute('title'); });
   try { if (matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches) document.querySelector('.camhint').textContent = 'Ein Finger dreht · zwei Finger zoomen und verschieben · Tippen wählt aus'; } catch (e) { /* egal */ }
   const saved = data && data.S ? data : load();
   if (saved && saved.S && (saved.S.v === 5 || saved.S.v === 6)) {
@@ -6459,7 +6652,7 @@ function debtLine(st, i) {
   const p = st.players[i];
   const d = debtOf(p), oi = owedInterest(p);
   if (!d && !oi) return '';
-  return ` · <span class="pdebt">Kredit ${fmt(d)}${oi ? ` <small>+${fmt(oi)} Zinsen</small>` : ''}</span>`;
+  return ` · <span class="pdebt">Kredit ${fmt(d)}${oi ? ` <small>+${fmt(oi)} Zinsen offen</small>` : ''}</span>`;
 }
 
 // ======================================================================
@@ -6719,7 +6912,7 @@ function hideTip() { const t = document.getElementById('tip'); if (t) t.hidden =
 // Was ein zusätzlicher Eingang an diesem Hotel bringt
 function entranceGainTag(st, h) {
   const g = perLap(st, h, st.hotels[h].stage, 1);
-  return g ? ` <span class="ptag up">Ø +${roundFmt(g)}/Umlauf</span>` : '';
+  return g ? ` <span class="ptag up" title="Durchschnitt, wenn die Gegner einmal ums Brett fahren">bringt im Schnitt +${roundFmt(g)} pro Runde</span>` : '';
 }
 // Wie wahrscheinlich halten Gegner bald auf diesem Feld (nächste ~12 Felder)?
 function fieldChance(st, space) {
@@ -6751,11 +6944,11 @@ function dangerList(st) {
   for (let d = 1; d <= 6; d++) {
     const i = (p.pos + d) % BOARD_LEN;
     const sp = SPACES[i];
-    if (sp.pension !== null) { out.push({ d, i, name: PENSIONS[sp.pension].name, rate: PENSIONS[sp.pension].rate * stayMultiplier(st), color: PENSIONS[sp.pension].color, lvl: 'low' }); continue; }
+    if (sp.pension !== null) { out.push({ d, i, name: PENSIONS[sp.pension].name, dat: PENSIONS[sp.pension].dat, rate: PENSIONS[sp.pension].rate * stayMultiplier(st), color: PENSIONS[sp.pension].color, lvl: 'low' }); continue; }
     const h = entranceAt(st, i);
     if (h >= 0 && st.hotels[h].owner !== null && st.hotels[h].owner !== st.cur) {
       const r = nightRate(st, h) * stayMultiplier(st);
-      out.push({ d, i, name: HOTELS[h].name, rate: r, color: HOTELS[h].color, lvl: r * 6 > p.cash ? 'high' : r >= 1000 ? 'mid' : 'low' });
+      out.push({ d, i, name: HOTELS[h].name, dat: inH(h), rate: r, color: HOTELS[h].color, lvl: r * 6 > p.cash ? 'high' : r >= 1000 ? 'mid' : 'low' });
     }
   }
   return out;
@@ -6766,7 +6959,7 @@ function dangerHTML(st) {
   if (!L.length) return `<div class="danger ok">Die nächsten 6 Felder sind sicher: keine fremden Eingänge.</div>`;
   const worst = L.reduce((a, x) => (x.rate > a.rate ? x : a), L[0]);
   return `<div class="danger"><div class="dgh">Die nächsten 6 Felder</div>${L.map(x => `<div class="dgr ${x.lvl}"><span>Feld +${x.d}: ${esc(x.name)}</span><b>${fmt(x.rate)}/Nacht</b></div>`).join('')}
-    <div class="dgf">Schlimmstenfalls ${fmt(worst.rate * 6)} ${worst.name.startsWith('Pension') || worst.name.startsWith('Gasthof') ? 'in der ' + esc(worst.name) : 'im ' + esc(worst.name)}.</div></div>`;
+    <div class="dgf">Schlimmstenfalls ${fmt(worst.rate * 6)} ${esc(worst.dat)}.</div></div>`;
 }
 // Felder auf dem Brett einfärben (nur vor dem eigenen Wurf)
 function dangerSpaces() {
@@ -6778,9 +6971,11 @@ function dangerSpaces() {
 const HINT_KEY = 'hotelkoenige-hinweise';
 const HINTS = {
   buy: ['Kaufen-Feld', 'Du darfst eins der angrenzenden Grundstücke kaufen. Auf unbebauten Grundstücken der Mitspieler geht das je nach Hausregel auch.'],
-  build: ['Bauantrag', 'Wähle, wie viel du auf einmal baust. Mehr auf einmal spart Würfe, ist bei der 2 aber teurer. Fahre über einen Knopf: Daneben siehst du, was der Bau bringt.'],
-  entrance: ['Eingang setzen', 'Ohne Eingang verdient ein Hotel nichts. Der erste Eingang kommt aufs Sternfeld. „Chance hoch“ heißt: Ein Gegner kommt bald vorbei.'],
+  build: ['Bauantrag', 'Wähle, wie viel du auf einmal baust. Mehr auf einmal spart Würfe, ist bei der 2 aber teurer. Auf jedem Knopf steht, wie viel mehr pro Nacht der Bau bringt.'],
+  entrance: ['Eingang setzen', 'Ohne Eingang verdient ein Hotel nichts. Der erste Eingang kommt aufs Sternfeld. „Bald viele Gäste“ heißt: Ein Gegner kommt wahrscheinlich bald vorbei.'],
   nights: ['Übernachten', 'Du stehst vor einem fremden Eingang. Der Würfel bestimmt die Nächte, du zahlst Nächte mal Preis.'],
+  pension: ['Übernachten', 'Du stehst vor einer Pension der Bank. Der Würfel bestimmt die Nächte, du zahlst Nächte mal Preis an die Bank.'],
+  roll: ['Dein Zug', `Würfeln, fahren, dann zählt das Feld, auf dem du stehst. Unterwegs kassierst du an der Bank und kaufst Eingänge am Rathaus. ${TOUCH ? 'Tippe' : 'Klick'} auf ein Grundstück, dann siehst du Preise und Baukosten.`],
   debt: ['Geldnot', 'Dir fehlt Bargeld. Nimm einen Notkredit auf, löse Festgeld auf oder gib ein Grundstück ab, bis die Rechnung bezahlt ist.'],
   bauzwang: ['Bauzwang', 'Doppelter Preis gewürfelt und das Geld reicht nicht. Nimm einen Baukredit oder gib ein Grundstück ab. Gibst du das Baugrundstück selbst ab, entfällt der Bau.'],
   auction: ['Versteigerung', 'Biete in Schritten oder steig aus. Wer am Ende am meisten bietet, bekommt das Grundstück mit allem, was darauf steht.'],
@@ -6801,14 +6996,63 @@ function keepScroll(fn) {
 function fitTopbar() {
   const tb = document.querySelector('.topbar');
   if (!tb) return;
-  tb.classList.remove('c1', 'c2', 'c3');
-  for (const c of ['c1', 'c2', 'c3']) {
+  const steps = ['c0', 'c1', 'c2', 'c3', 'c4'];
+  tb.classList.remove(...steps);
+  for (const c of steps) {
     if (tb.scrollWidth <= tb.clientWidth + 1) break;
     tb.classList.add(c);
   }
 }
 window.addEventListener('resize', () => fitTopbar());
-function resetHints() { try { localStorage.removeItem(HINT_KEY); } catch (e) { /* egal */ } view.hintNow = null; }
+function resetHints() { try { localStorage.removeItem(HINT_KEY); localStorage.removeItem(INTRO_KEY); } catch (e) { /* egal */ } view.hintNow = null; }
+// ---------------- Einführung beim allerersten Spiel ----------------
+const INTRO_KEY = 'hotelkoenige-einfuehrung';
+// Wer schon mehrere Hinweise gesehen hat, kennt das Spiel: dann keine Einführung mehr
+function introSeen() { try { return localStorage.getItem(INTRO_KEY) === '1' || hintsSeen().size >= 3; } catch (e) { return true; } }
+function markIntro() { try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) { /* egal */ } }
+const INTRO_ICONS = {
+  goal: '<path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-5h6v5"/><path d="M12 4V2"/>',
+  turn: '<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 114.2 1.8c-.9.8-1.8 1.3-1.8 2.6M12 17h.01"/>',
+};
+function openIntro() {
+  if (netIsGuest()) return;
+  clearTimeout(view.aiTimer);
+  const st = S, R = rulesOf(st);
+  const tap = TOUCH ? 'Tippe' : 'Klick';
+  const pages = [
+    { ic: 'goal', t: 'Das Ziel', x: [
+      'Kaufe Grundstücke, baue Hotels und setze Eingänge an die Straße.',
+      'Hält ein Gegner an deinem Eingang, übernachtet er bei dir und zahlt.',
+      st.roundLimit ? `Nach ${st.roundLimit} Runden gewinnt, wer am meisten besitzt.` : 'Gewonnen hat, wer als Letzter noch nicht pleite ist.'] },
+    { ic: 'turn', t: 'Ein Zug', x: [
+      'Würfeln und fahren. Wer über den Bank-Bogen fährt, bekommt 2.000 €. Am Rathaus-Bogen gibt es Eingänge.',
+      'Dann zählt das Feld: Kaufen, Bauen, Ereignis oder Übernachten.',
+      'Rechts steht immer, was du gerade tun kannst. Der gelbe Knopf ist der nächste Schritt' + (TOUCH ? '.' : ', auch mit der Leertaste.')] },
+    { ic: 'help', t: 'Hilfe unterwegs', x: [
+      `${tap} auf ein Grundstück, dann siehst du Preise und Baukosten.`,
+      'Beim ersten Mal erklären kurze Hinweise jede neue Lage.',
+      `Alle Regeln stehen unter „Hilfe“${TOUCH ? '' : ' (Taste H)'}. Das Protokoll zeigt, was passiert ist.`
+        + (R.doubleFail === 'force' && !R.protect ? ' Zum Kennenlernen passt das Regelpaket „Entspannt“ unter Einstellungen.' : '')] },
+  ];
+  let k = 0;
+  const draw = () => {
+    const pg = pages[k];
+    $('modal').innerHTML = `<div class="overlay"><div class="dialog intro" role="dialog" aria-modal="true" aria-labelledby="in-t">
+      <div class="in-step">${pages.map((_, i) => `<i class="${i === k ? 'on' : ''}"></i>`).join('')}<span>${k + 1} von ${pages.length}</span></div>
+      <div class="in-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${INTRO_ICONS[pg.ic]}</svg><h2 id="in-t">${pg.t}</h2></div>
+      <ul class="in-list">${pg.x.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      <div class="dacts"><button class="btn quiet" type="button" id="in-skip" data-close>Überspringen</button>${k ? '<button class="btn" type="button" id="in-back">Zurück</button>' : ''}<button class="btn primary" type="button" id="in-next" data-primary>${k === pages.length - 1 ? 'Los geht’s' : 'Weiter'}</button></div></div></div>`;
+  };
+  draw();
+  $('modal').onclick = e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.id === 'in-next') { if (k < pages.length - 1) { k++; draw(); } else { markIntro(); closeModal(); } }
+    else if (b.id === 'in-back') { k = Math.max(0, k - 1); draw(); }
+    else if (b.id === 'in-skip') { markIntro(); closeModal(); }
+  };
+}
 // Welcher Hinweis passt zur aktuellen Lage eines Menschen?
 function hintFor(st) {
   if (settings.hints === false || !st || st.phase === 'over') return null;
@@ -6818,11 +7062,13 @@ function hintFor(st) {
   if (view.hintNow && view.hintNow.turn === st.turn && view.hintNow.phase === ph) return view.hintNow.key;
   const seen = hintsSeen();
   let key = null;
-  if (['buy', 'build', 'entrance', 'nights', 'debt', 'bauzwang', 'auction'].includes(ph)) key = ph;
+  if (ph === 'nights' && st.data && st.data.pension !== undefined) key = 'pension';
+  else if (['buy', 'build', 'entrance', 'nights', 'debt', 'bauzwang', 'auction'].includes(ph)) key = ph;
   else if (ph === 'done' && depositOpen(st)) key = 'deposit';
   else if (ph === 'savings') key = 'deposit';
   else if (ph === 'roll' && debtOf(p) > 0) key = 'credit';
-  else if (ph === 'roll' && seasonIdx(st) >= 0) key = 'season';
+  else if (ph === 'roll' && seasonIdx(st) >= 0 && seen.has('roll')) key = 'season';
+  else if (ph === 'roll') key = 'roll';
   if (!key || seen.has(key)) return null;
   markHint(key);
   view.hintNow = { key, turn: st.turn, phase: ph };
@@ -6841,7 +7087,7 @@ const PRESETS = [
   { id: 'standard', title: 'Hotelkönige', desc: 'Die abgestimmte Standard-Mischung mit Bank, Festgeld, Ereigniskarten und Bauzwang.', rules: {} },
   { id: 'short', title: 'Kurzes Spiel', desc: 'Eingänge auch auf Bau-Feldern, einer pro Hotel, freie Grundstücke werden versteigert. Mit Rundenlimit 30.', rules: { entrances: 'bau', multiEntrance: 'perHotel', landAuction: 'half', permitRoll: 'auto' }, limit: 30 },
   { id: 'hard', title: 'Harte Bank', desc: 'Hohe Zinsen mit Zinseszins, Ratenkredit, die Bank zahlt nur ein Fünftel und versteigert erst ab 10 % Aufschlag.', rules: { interest: 'high', interestPay: 'compound', repayment: 'installments', bankBuy: 'fifth', auctionAdd: 10 } },
-  { id: 'relaxed', title: 'Entspannt', desc: 'Zurücknehmen erlaubt, niedrige Zinsen, Schutzfrist nach dem Kauf, bei der 2 darfst du verzichten.', rules: { undo: 'roll', interest: 'low', protect: true, doubleFail: 'skip', takeover: 'half' } },
+  { id: 'relaxed', title: 'Entspannt', desc: 'Gut für die erste Partie: Zurücknehmen erlaubt, niedrige Zinsen, Schutzfrist nach dem Kauf, bei der 2 darfst du verzichten.', rules: { undo: 'roll', interest: 'low', protect: true, doubleFail: 'skip', takeover: 'half' } },
 ];
 const presetRules = pr => ({ ...DEFAULT_RULES, ...pr.rules });
 function presetOf(rules) {
@@ -8969,8 +9215,8 @@ function applyKeys(dt) {
   if (keysDown.has('rotR')) d.theta -= 1.5 * dt;
   if (keysDown.has('tiltUp')) d.phi = clamp(d.phi - 0.9 * dt, 0.05, 1.32);
   if (keysDown.has('tiltDown')) d.phi = clamp(d.phi + 0.9 * dt, 0.05, 1.32);
-  if (keysDown.has('zoomIn')) { d.r = clamp(d.r * (1 - 1.1 * dt), 6, 40 * K); camState.userZoomed = true; }
-  if (keysDown.has('zoomOut')) { d.r = clamp(d.r * (1 + 1.1 * dt), 6, 40 * K); camState.userZoomed = true; }
+  if (keysDown.has('zoomIn')) { d.r = clamp(d.r * (1 - 1.1 * dt), 6, maxR()); camState.userZoomed = true; }
+  if (keysDown.has('zoomOut')) { d.r = clamp(d.r * (1 + 1.1 * dt), 6, maxR()); camState.userZoomed = true; }
 }
 function onKeyDown(e) {
   if (e.target.closest && e.target.closest('input, select, textarea')) return;
@@ -9632,6 +9878,10 @@ function maybeRecap() {
   const evts = st.log.filter(l => l.turn > P.lastTurn && l.p !== me && ['buy', 'build', 'pay', 'bad', 'win', 'card', 'credit', 'season'].includes(l.k));
   if (!evts.length) return false;
   const delta = P.cash - (P.cashAtEnd ?? P.cash);
+  // Wurde mir ein Grundstück abgenommen? Das wirkt ohne Erklärung wie ein Fehler
+  const rx = new RegExp(`kauft ${P.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} das Grundstück (.+?) für`);
+  const taken = evts.map(l => (l.t.match(rx) || [])[1]).filter(Boolean);
+  const why = taken.length ? `<p class="recap-why"><b>${taken.length === 1 ? `Warum ist ${esc(taken[0])} weg?` : 'Warum sind Grundstücke weg?'}</b> Unbebaute Grundstücke dürfen nach den Hausregeln übernommen werden, auch ohne deine Zustimmung. Du bekommst dafür ${rulesOf(st).takeover === 'half' ? 'den halben' : 'den vollen'} Grundpreis. Schutz: bald bauen oder unter Einstellungen bei „Grundstücke“ eine Schutzfrist einschalten.</p>` : '';
   const by = {};
   for (const l of evts) (by[l.p] = by[l.p] || []).push(l);
   $('modal').onclick = null;
@@ -9641,6 +9891,7 @@ function maybeRecap() {
     ${delta ? `<div class="recap-sum ${delta > 0 ? 'plus' : 'minus'} num">${delta > 0 ? '+' : '−'}${fmt(Math.abs(delta))} für dich</div>` : '<p class="hint">Dein Kontostand hat sich nicht verändert.</p>'}
     ${Object.entries(by).map(([pi, ls]) => `<div class="recap-p"><i style="background:${st.players[pi].color}"></i>${esc(st.players[pi].name)}</div>
       ${ls.slice(-6).map(l => `<div class="recap-l ${l.t.includes(P.name) ? 'me' : ''}">${esc(l.t)}</div>`).join('')}`).join('')}
+    ${why}
     <div class="dacts" style="margin-top:20px"><button class="btn primary" type="button" id="rc-ok" data-primary data-close>Weiter <kbd>Leertaste</kbd></button></div></div></div>`;
   $('rc-ok').onclick = () => closeModal();
   return true;
@@ -9731,6 +9982,36 @@ function openSaves() {
     }
   };
 }
+
+// ---------------- Menü im Handy-Modus ----------------
+function openPhoneMenu() {
+  clearTimeout(view.aiTimer);
+  const fsOk = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+  const it = (tool, label, extra = '') => `<button class="btn mitem" type="button" data-mt="${tool}"><span>${label}</span>${extra}</button>`;
+  const on = v => `<span class="mstate ${v ? 'on' : ''}">${v ? 'an' : 'aus'}</span>`;
+  const guest = netIsGuest();
+  $('modal').onclick = null;
+  $('modal').innerHTML = `<div class="overlay"><div class="dialog phmenudlg" role="dialog" aria-modal="true" aria-labelledby="pm-t">
+    <h2 id="pm-t">Menü</h2>
+    <div class="glbl">Spiel</div><div class="mgrid">${it('hotels', 'Hotels im Überblick')}${it('log', 'Protokoll')}${it('help', 'So wird gespielt')}${NET.on || netCanReopen() ? it('net', 'Online-Spiel') : ''}</div>
+    <div class="glbl">Ansicht und Ton</div><div class="mgrid">${it('overview', 'Ganzes Brett')}${it('top', 'Von oben')}${it('follow', 'Kamera folgt', on(settings.follow))}${it('sound', 'Soundeffekte', on(settings.sound))}${it('music', 'Musik', on(settings.music))}${fsOk ? it('fullscreen', 'Vollbild', on(!!fsElement())) : ''}</div>
+    <div class="glbl">Mehr</div><div class="mgrid">${it('settings', guest ? 'Darstellung und Ton' : 'Einstellungen')}${guest ? '' : it('saves', 'Spielstände') + it('new', 'Neues Spiel')}${it('quit', 'Partie beenden')}</div>
+    <div class="dacts"><button class="btn primary" type="button" id="pm-close" data-close data-primary>Zurück zum Spiel</button></div></div></div>`;
+  $('modal').onclick = e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.id === 'pm-close') return closeModal();
+    const t = b.dataset.mt;
+    if (!t) return;
+    const el = document.querySelector(`.tools [data-tool="${t}"]`) || b;
+    // Schalter bleiben im Menü sichtbar, alles andere schließt das Menü
+    if (['follow', 'sound', 'music', 'fullscreen'].includes(t)) { onTool(t, el); setTimeout(openPhoneMenu, t === 'fullscreen' ? 300 : 0); return; }
+    closeModal();
+    onTool(t, el);
+  };
+}
+$('phmenu').onclick = () => openPhoneMenu();
+$('phgrip').onclick = () => { document.body.classList.toggle('sheet-max'); const c = document.querySelector('.col.right'); if (c && !document.body.classList.contains('sheet-max')) c.scrollTop = 0; };
 
 // ---------------- Start ----------------
 window.claude?.hot?.snapshot?.(() => ({ S, settings, lastSetup }));
