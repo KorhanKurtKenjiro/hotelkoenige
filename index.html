@@ -9964,7 +9964,7 @@ function netPanel() {
       <div class="nseats">${seats}</div>
       ${NET.on ? `<div class="netchat"><div class="netchat-list">${netChatHTML()}</div>
         <form class="netchat-in" id="np-form"><input type="text" id="np-msg" maxlength="160" placeholder="Nachricht an alle …" autocomplete="off" enterkeyhint="send"><button class="btn" type="submit">Senden</button>${voiceSupported() ? '<button class="btn vbtn" type="button" id="np-mic" aria-label="Gedrückt halten für eine Sprachnachricht" title="Gedrückt halten für eine Sprachnachricht (Taste V)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>' : ''}</form>
-        <p class="hint np-keys">${TOUCH ? 'Mikrofon gedrückt halten für eine Sprachnachricht.' : 'Enter schickt · Mikrofon gedrückt halten (im Spiel einfach <kbd>V</kbd> halten) für eine Sprachnachricht · <kbd>Esc</kbd> zurück zum Spiel'}</p></div>` : ''}
+        <p class="hint np-keys">${TOUCH ? 'Mikrofon gedrückt halten für eine Sprachnachricht.' : 'Enter schickt · Mikrofon gedrückt halten (ohne offenen Chat einfach <kbd>V</kbd> halten) für eine Sprachnachricht · <kbd>Esc</kbd> zurück zum Spiel'}</p></div>` : ''}
       <div class="dacts">${!NET.on ? '<button class="btn" type="button" id="np-reopen">Raum wieder öffnen</button>' : ''}
         ${guest && NET.state === 'gone' ? '<button class="btn" type="button" id="np-retry">Erneut verbinden</button>' : ''}
         <button class="btn primary" type="button" id="np-ok" data-close data-primary>Zurück zum Spiel</button></div></div></div>`;
@@ -9991,7 +9991,7 @@ function netPanel() {
   if (!TOUCH) { const inp = $('np-msg'); if (inp) inp.focus({ preventScroll: true }); }
   $('modal').onclick = e => {
     const b = e.target.closest('button');
-    if (!b) return;
+    if (!b) { const inp = $('np-msg'); if (inp && !TOUCH && !e.target.closest('input, select, textarea, a') && !String(getSelection())) inp.focus({ preventScroll: true }); return; }
     if (b.id === 'np-ok') { NET.panelDraw = null; closeModal(); }
     else if (b.id === 'net-copy') netCopyCode(b);
     else if (b.id === 'np-end') { confirmEnd = true; draw(); const y = $('np-end-no'); if (y) y.focus(); }
@@ -10110,13 +10110,18 @@ function onKeyDown(e) {
     if (c) { e.preventDefault(); c.click(); return; }
   }
   if (inField) return;
+  // Online-Fenster offen: Getipptes gehört immer in den Chat, auch wenn das Schreibfeld gerade nicht den Fokus hat
+  // (vorher schloss z. B. das „c“ in „ich“ oder ein Leerzeichen das Fenster)
+  const chatIn = document.querySelector('#modal .netpanel #np-msg');
+  if (chatIn) {
+    if ((e.key.length === 1 || e.key === 'Backspace') && !e.ctrlKey && !e.metaKey && !e.altKey) chatIn.focus({ preventScroll: true });
+    return;
+  }
   if (!$('endscreen').hidden) return;
   if (!$('logov').hidden) { logKeys(e); return; }
-  // Sprachnachricht: V gedrückt halten (auch bei offenem Online-Fenster)
+  // Sprachnachricht: V gedrückt halten
   if ((e.key === 'v' || e.key === 'V') && NET.on) { e.preventDefault(); if (!e.repeat) voiceStart(); return; }
   if ($('modal').innerHTML) {
-    // C schließt das Online-Fenster wieder
-    if ((e.key === 'c' || e.key === 'C') && document.querySelector('#modal .netpanel')) { e.preventDefault(); const c = document.querySelector('#modal [data-close]'); if (c) c.click(); return; }
     const pr = document.querySelector('#modal [data-primary]');
     if ((e.key === ' ' || e.key === 'Enter') && pr && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); pr.click(); }
     return;
@@ -10154,7 +10159,7 @@ const KEYS = [
   ['Pos1', 'Übersicht'],
   ['T', 'Draufsicht'],
   ['P', 'Protokoll öffnen, Spiel pausiert'],
-  ['C', 'Online-Fenster mit Chat öffnen, gleich losschreiben (nur online)'],
+  ['C', 'Online-Fenster mit Chat öffnen, gleich losschreiben, Esc schließt (nur online)'],
   ['V halten', 'Sprachnachricht aufnehmen, loslassen schickt sie ab (nur online)'],
   ['F', 'Vollbild an oder aus'],
   ['M', 'Musik an oder aus'],
