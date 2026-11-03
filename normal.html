@@ -659,6 +659,42 @@ body.phone.ph-land .sbody { grid-template-columns: 170px minmax(0, 1fr); }
 .mstate { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
 .mstate.on { color: var(--good); }
 @media (max-width: 360px) { .mgrid { grid-template-columns: 1fr; } }
+
+/* Online-Fenster: gefährlicher Knopf oben und klein, mit Rückfrage; Mikrofon; Sprachnachrichten */
+.np-head { display: flex; align-items: center; gap: 12px; }
+.np-head h2 { margin-right: auto; }
+.btn.small { padding: 6px 11px; font-size: 13px; }
+.nendbtn { color: #e9a08f; border-color: rgba(233,160,143,.35); }
+.nendbtn:hover:not(:disabled) { color: #ffb4a3; border-color: rgba(255,140,120,.6); }
+.nend.ask { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 4px 0 10px; padding: 10px 12px; border: 1px solid rgba(255,120,100,.45); border-radius: 12px; background: rgba(120,30,20,.25); }
+.nend.ask span { flex: 1 1 220px; font-size: 14px; }
+.btn.danger { background: #8e2a1f; border-color: #c0483a; color: #fff3ee; justify-content: center; font-weight: 600; }
+.btn.danger:hover:not(:disabled) { background: #a6342a; border-color: #e0604f; }
+.vbtn { flex: none; display: inline-flex; align-items: center; justify-content: center; padding: 8px 11px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.vbtn.on { background: #b8322a; border-color: #ff7a6a; color: #fff; }
+.np-keys { margin: 8px 2px 0; }
+.np-keys kbd { font: inherit; font-size: 11px; border: 1px solid var(--line-2); border-radius: 5px; padding: 0 5px; }
+.vplay { font: inherit; font-size: 13px; color: var(--fg); background: rgba(214,178,94,.12); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; cursor: pointer; }
+.vplay:hover:not(:disabled) { border-color: var(--gold); }
+.vplay:disabled { opacity: .45; cursor: default; }
+.voicechip { position: absolute; left: 50%; top: 116px; transform: translateX(-50%); z-index: 41; pointer-events: none; padding: 7px 16px; border-radius: 999px; background: rgba(16,13,10,.92); border: 1px solid var(--line-2); color: var(--fg); font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.voicechip.rec { border-color: #ff6a5a; }
+.voicechip i { width: 10px; height: 10px; border-radius: 50%; background: #ff4a3a; animation: blink 1s infinite; }
+body.phone .voicechip { top: auto; bottom: calc(46vh + 56px); }
+
+/* Während einer Animation: ruhige Zeile statt „…“, Klick beschleunigt */
+.busyline { color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+.busyline small { font-size: 12px; opacity: .75; }
+.busyline.fast small { visibility: hidden; }
+#turn .tray { cursor: pointer; }
+/* Der Verlauf über „Verzichten“ darf keine Klicks auf die Knöpfe darunter schlucken */
+.stickybar { pointer-events: none; }
+.stickybar > * { pointer-events: auto; }
+.toast { pointer-events: none; }
+
+.ro-note { margin: 0 0 10px; }
+
+.segx button:disabled { cursor: default; }
 </style>
 
 <div class="loading" id="loading"><div>Hotelkönige<small>Das Brett wird aufgebaut …</small><div class="lhint">Bleibt es hier stehen? Dann zeigt gerade eine Vorschau die Datei an, zum Beispiel in Google Drive, der Dateien-App oder einer Mail. Eine Vorschau kann das Spiel nicht starten.<br><br>Am PC oder Mac: Datei herunterladen und mit einem Browser öffnen (Chrome, Edge, Firefox oder Safari).<br>Auf iPhone und iPad klappt es nur über einen Weblink zum Spiel.</div></div></div>
@@ -730,6 +766,7 @@ document.documentElement.className += ' js';
     </aside>
   </div>
   <div class="toast" id="toast" hidden></div>
+  <div class="voicechip" id="voicechip" hidden></div>
 </div>
 <div id="modal"></div>
 <div class="logov" id="logov" hidden>
@@ -2588,7 +2625,7 @@ const TOUCH = (() => { try { return matchMedia('(pointer: coarse)').matches && !
 const PLAYER_COLORS = ['#e8384f', '#2f86f6', '#2fc46b', '#f5c518'];
 const SAVE_KEY = 'hotel-3d-v5';
 let S = null;
-let settings = { musicVol: 75, sfxVol: 30, fast: false, fastAI: true, autoEnd: false, follow: false, sound: true, music: true, labels: true, daynight: 'cycle', cinematic: true, recap: true, fullscreenOnStart: true, quips: 'often', quality: 'auto', hints: true, danger: false, entLabels: true, neon: true, life: true, miniature: false, diceSound: 'wood' };
+let settings = { musicVol: 75, sfxVol: 30, fast: false, fastAI: true, autoEnd: false, follow: false, sound: true, music: true, labels: true, daynight: 'cycle', cinematic: true, recap: true, fullscreenOnStart: true, quips: 'often', quality: 'auto', voice: true, hints: true, danger: false, entLabels: true, neon: true, life: true, miniature: false, diceSound: 'wood' };
 let lastSetup = null;
 // Detailgrad der Formen und Texturen: beim Start aus der gespeicherten Grafikqualität gelesen
 const SAVED_Q = (() => { try { return ((JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') || {}).settings || {}).quality || 'auto'; } catch (e) { return 'auto'; } })();
@@ -2619,7 +2656,7 @@ const PINE_SEG = DETAIL >= 2 ? 10 : 7;          // Tannen etwas feiner, bleiben 
   THREE.LatheGeometry = class extends Lathe { constructor(p, s = 12, ...rest) { super(p, seg(s), ...rest); } };
 })();
 // Animationsdauer: schnelles Tempo für alle Züge oder nur für Computerzüge
-const D = ms => (settings.fast || (settings.fastAI && S && S.phase !== 'over' && S.players[actor(S)] && S.players[actor(S)].ai) ? ms * 0.4 : ms) * (window.__slowmo || 1) * (view.catchup ? 0.15 : 1);
+const D = ms => (settings.fast || (settings.fastAI && S && S.phase !== 'over' && S.players[actor(S)] && S.players[actor(S)].ai) ? ms * 0.4 : ms) * (window.__slowmo || 1) * (view.catchup || view.hurry ? 0.15 : 1);
 const view = { paused: false, stopped: false, busy: false, sel: null, hover: null, entHotel: null, aiTimer: null, endTimer: null, preview: null };
 
 // Maßstab: Welteinheiten je Rasterfeld. 1 = kompaktes Brett; größer = mehr Platz, Gebäude bleiben gleich groß
@@ -2655,6 +2692,23 @@ function tween(ms, fn, ease = easeInOut) {
   return new Promise(res => tweens.push({ t0: performance.now(), ms: Math.max(1, ms), fn, ease, res }));
 }
 document.addEventListener('visibilitychange', () => { if (bgFast()) runTweens(Infinity); });
+// Klick ins Zugfenster oder Leertaste, während noch eine Animation läuft: den Rest zügig abspielen.
+// (Vorher lief so ein Klick ins Leere, und man musste nach der Animation noch einmal klicken.)
+function hurry() {
+  if (!view.busy) return false;
+  document.querySelectorAll('.evcard:not(.out)').forEach(el => el.click());
+  if (view.hurry) return true;
+  view.hurry = true;
+  const now = performance.now();
+  for (const tw of tweens) {
+    const done = Math.min(0.999, (now - tw.t0) / tw.ms);
+    const ms = 140 / (1 - done);
+    if (ms < tw.ms) { tw.ms = ms; tw.t0 = now - done * ms; }
+  }
+  const b = document.querySelector('#turn-body .busyline');
+  if (b) b.classList.add('fast');
+  return true;
+}
 function runTweens(now) {
   for (let i = tweens.length - 1; i >= 0; i--) {
     const tw = tweens[i];
@@ -4065,6 +4119,7 @@ function layoutInsets() {
   return { L: l.right + 8, R: window.innerWidth - r.left + 8, T: 0, B: 0 };
 }
 function resize() {
+  view.deedMinH = 0; if ($('deed')) $('deed').style.minHeight = '';
   const changed = phoneLayout();
   const st = $('stage');
   const W = st.clientWidth, H = st.clientHeight;
@@ -4147,7 +4202,7 @@ canvasEl.addEventListener('pointermove', e => {
   if (!ptr.down) return;
   const dx = e.clientX - ptr.x, dy = e.clientY - ptr.y;
   ptr.x = e.clientX; ptr.y = e.clientY;
-  if (Math.abs(e.clientX - ptr.sx) + Math.abs(e.clientY - ptr.sy) > (e.pointerType === 'touch' ? 10 : 5)) ptr.moved = true;
+  if (Math.hypot(e.clientX - ptr.sx, e.clientY - ptr.sy) > (e.pointerType === 'touch' ? 12 : 7)) ptr.moved = true;
   if (!ptr.moved) return;
   canvasEl.classList.add('grab');
   const d = camState.des;
@@ -5027,7 +5082,8 @@ function renderTurn() {
   $('turn').style.setProperty('--pc', P.color);
   const human = localHuman(who);
   let html = `<div class="thead">${P.ai && PERSONAS[P.persona] ? `<span class="tav">${avatarSVG(P.persona, 26)}</span>` : '<span class="tdot"></span>'}<span class="tname">${esc(P.name)}</span><span class="tsub">${st.phase === 'over' ? 'gewinnt' : st.phase === 'auction' ? 'bietet' : P.out ? 'pleite' : P.ai ? esc(personaTag(P) || 'Computer') : 'am Zug'}</span></div>`;
-  if (view.busy || NET.pending) { $('turn-body').innerHTML = html + `<p class="prompt" style="color:var(--muted)">…</p>`; return; }
+  if (NET.pending && !view.busy) { $('turn-body').innerHTML = html + `<p class="prompt busyline">Wird an den Gastgeber geschickt …</p>`; return; }
+  if (view.busy) { $('turn-body').innerHTML = html + `<p class="prompt busyline ${view.hurry ? 'fast' : ''}">Einen Moment …<small>${TOUCH ? 'Tippen' : 'Klick oder Leertaste'}: schneller</small></p>`; return; }
   html += `<p class="prompt">${esc(st.prompt)}</p>`;
   if (human) html += hintHTML(st);
   let c = '';
@@ -5156,6 +5212,17 @@ function renderTurn() {
 function renderDeed() {
   const st = S;
   if (!st) return;
+  // während die Maustaste gedrückt ist, nichts umbauen (sonst kann der Klick danebengehen)
+  if (view.pressing) { view.deedLater = true; return; }
+  renderDeedNow();
+  const d = $('deed');
+  if (d && d.offsetParent && !document.body.classList.contains('phone')) {
+    const h = d.offsetHeight;
+    if (h > (view.deedMinH || 0)) { view.deedMinH = h; d.style.minHeight = h + 'px'; }
+  }
+}
+function renderDeedNow() {
+  const st = S;
   const pk = view.hover && view.hover.pension !== undefined ? view.hover.pension : st.phase === 'nights' && st.data.pension !== undefined && view.sel === null ? st.data.pension : null;
   if (pk !== null) {
     const P = PENSIONS[pk], m = stayMultiplier(st);
@@ -5231,6 +5298,7 @@ async function applyAction(a) {
   clearPreview();
   hideTip();
   view.busy = true;
+  view.hurry = false;
   // Wird mitten in der Animation ein anderes Spiel geladen oder neu gestartet, bricht dieser Zug still ab
   const gen = view.gen;
   const w = async pr => { const r = await pr; if (view.gen !== gen) throw STALE; return r; };
@@ -5304,7 +5372,7 @@ async function applyAction(a) {
     if (e === STALE) return false;
     throw e;
   } finally {
-    if (view.gen === gen) view.busy = false;
+    if (view.gen === gen) { view.busy = false; view.hurry = false; }
   }
   save();
   renderHUD();
@@ -5343,7 +5411,14 @@ function load() {
 document.addEventListener('click', e => {
   sfx.unlock();
   const tool = e.target.closest('[data-tool]');
-  if (tool) return onTool(tool.dataset.tool, tool);
+  if (tool) { if (e.detail > 0 && tool.blur) tool.blur(); return onTool(tool.dataset.tool, tool); }
+  if (view.busy && e.target.closest('#turn')) { hurry(); return; }
+  // Würfelschale anklicken = würfeln (wenn gerade gewürfelt werden kann)
+  if (e.target.closest('#turn .tray')) {
+    const p = document.querySelector('#turn-body [data-primary][data-act^="roll"], #turn-body [data-primary][data-act="applyPermit"]');
+    if (p && !p.disabled) p.click();
+    return;
+  }
   const pc = e.target.closest('#players .pcard');
   if (pc && !$('modal').innerHTML) return openOverview(+pc.dataset.pi);
   const b = e.target.closest('#turn-body [data-act], #turn-body [data-ui]');
@@ -5404,8 +5479,12 @@ document.addEventListener('mouseout', e => {
   if (b && !b.contains(e.relatedTarget)) { clearPreview(); view.previewHotel = null; view.previewInfo = null; renderDeed(); hideTip(); }
 });
 document.addEventListener('keydown', onKeyDown);
-document.addEventListener('keyup', e => { const k = keyName(e); if (k) keysDown.delete(k); });
-window.addEventListener('blur', () => keysDown.clear());
+document.addEventListener('pointerdown', e => { if (e.button === 0 && e.target.closest && e.target.closest('.col')) view.pressing = true; }, true);
+const pressEnd = () => { if (!view.pressing) return; view.pressing = false; if (view.deedLater) { view.deedLater = false; setTimeout(renderDeed, 0); } };
+document.addEventListener('pointerup', pressEnd, true);
+document.addEventListener('pointercancel', pressEnd, true);
+document.addEventListener('keyup', e => { const k = keyName(e); if (k) keysDown.delete(k); if (e.key === 'v' || e.key === 'V') voiceStop(true); });
+window.addEventListener('blur', () => { keysDown.clear(); voiceStop(true); });
 function clickHotel(h) {
   const st = S;
   const human = st && st.phase !== 'over' && localHuman(actor(st)) && !view.busy;
@@ -5422,7 +5501,7 @@ function onTool(kind, el) {
   if (kind === 'sound') { settings.sound = !settings.sound; el.setAttribute('aria-pressed', settings.sound); save(); }
   if (kind === 'rules' || kind === 'help') openRules();
   if (kind === 'hotels') openOverview();
-  if (kind === 'settings') { if (netIsGuest()) openRuleEditor({ rules: rulesOf(S), mode: 'look', onApply: () => closeModal(), onCancel: () => closeModal() }); else openSettings(); }
+  if (kind === 'settings') { if (netIsGuest()) openRuleEditor({ rules: rulesOf(S), mode: 'guest', onApply: () => closeModal(), onCancel: () => closeModal() }); else openSettings(); }
   if (kind === 'new') { if (netIsGuest()) toast('Ein neues Spiel startet der Gastgeber.'); else openSetup(); }
   if (kind === 'net') { if (netCanReopen()) netReopen(); else netPanel(); }
   if (kind === 'music') toggleMusic();
@@ -5504,7 +5583,8 @@ function openSetup(first = false, keep = null) {
       <div class="hrbar"><div><b>Einstellungen</b><span class="hint">${presetOf(s.rules) ? `Regeln: Paket „${esc(PRESETS.find(p => p.id === presetOf(s.rules)).title)}“` : 'Eigene Regeln'}${tot ? ` · ${tot} ${tot === 1 ? 'Regel weicht' : 'Regeln weichen'} vom Standard ab` : ''}</span>${!introSeen() && presetOf(s.rules) !== 'relaxed' ? '<button class="linkbtn" type="button" id="relaxed-go">Erste Partie? Paket „Entspannt“ nehmen</button>' : ''}</div><div class="hrbtns"><button class="btn" type="button" id="hr-open">Hausregeln</button><button class="btn" type="button" id="look-open" title="Grafik, Lautstärke, Würfelgeräusch, Hilfen">Darstellung &amp; Ton</button></div></div>
       ${netSetupBoxHTML(s)}
       <div class="dacts">
-        <button class="btn quiet howto" type="button" id="howto">So wird gespielt</button>
+        <button class="btn quiet ${first ? '' : 'howto'}" type="button" id="howto">So wird gespielt</button>
+        ${first ? '<button class="btn quiet howto" type="button" id="appquit">Hotelkönige beenden</button>' : ''}
         ${saved && saved.S.phase !== 'over' && first ? '<button class="btn" type="button" id="resume">Letztes Spiel fortsetzen</button>' : ''}
         ${first ? '' : '<button class="btn quiet" type="button" id="cancel" data-close>Abbrechen</button>'}
         <button class="btn primary" type="button" id="start">Spiel starten</button>
@@ -5588,6 +5668,7 @@ function openSetup(first = false, keep = null) {
     else if (t.id === 'net-copy') netCopyCode(t);
     else if (t.id === 'net-join') { sync(); leaveSetup(); NET.err = ''; netJoinDialog(() => openSetup(first, s)); }
     else if (t.id === 'cancel') { leaveSetup(); closeModal(); netSyncAll(); }
+    else if (t.id === 'appquit') { sync(); leaveSetup(); if (NET.on) netClose(); view.quitFromMenu = true; quitGame(); }
     else if (t.id === 'resume') { sync(); leaveSetup(); if (settings.fullscreenOnStart) enterFullscreen(); S = saved.S; lastSetup = saved.lastSetup; NET.saved = saved.net || null; $('modal').onclick = null; $('modal').innerHTML = ''; restore(); sfx.unlock();
       // war es ein Online-Spiel, gleich wieder mit demselben Code öffnen: die Mitspieler verbinden sich von selbst neu
       if (netCanReopen()) { netReopen(); toast(`Online-Raum ${NET.code} wird wieder geöffnet`); }
@@ -5754,7 +5835,9 @@ function openRules(opt = {}) {
     ${sec('online', 'Online spielen', `<ul><li>Im Startmenü öffnet der <b>Gastgeber</b> einen Raum und bekommt einen Code aus fünf Zeichen. Plätze für Mitspieler stellt er auf „Online“.</li>
       <li>Mitspieler öffnen das Spiel an ihrem PC, klicken auf <b>Beitreten</b> und geben Namen und Code ein. Das geht im selben Netzwerk und übers Internet; eine Internetverbindung braucht man dafür immer.</li>
       <li>Der PC des Gastgebers führt die Regeln, würfelt und steuert die Computer. Alle sehen dasselbe Spiel, jeder bedient nur seine eigenen Plätze.</li>
-      <li>Das Online-Fenster (Knopf oben oder Taste C) zeigt die Plätze und hat einen Chat. Fehlt ein Mitspieler, kann der Gastgeber den Computer für ihn spielen lassen. Kommt er mit demselben Code und Namen zurück, bekommt er seinen Platz wieder.</li>
+      <li>Das Online-Fenster (Knopf oben oder Taste C) zeigt die Plätze und hat einen Chat: Mit C geöffnet, kannst du sofort schreiben, Enter schickt, Esc bringt dich zurück ins Spiel.</li>
+      <li>Sprachnachricht: Taste V gedrückt halten, sprechen, loslassen. Alle anderen hören sie sofort, im Chat lässt sie sich noch einmal abspielen. Beim ersten Mal fragt der Browser nach dem Mikrofon.</li>
+      <li>Fehlt ein Mitspieler, kann der Gastgeber den Computer für ihn spielen lassen. Kommt er mit demselben Code und Namen zurück, bekommt er seinen Platz wieder.</li>
       <li>Startet der Gastgeber neu, öffnet „Letztes Spiel fortsetzen“ den Raum mit demselben Code; die Mitspieler verbinden sich von selbst wieder.</li>
       <li>Im Online-Spiel gibt es kein Zurücknehmen von Zügen. Regeln, neue Spiele und Spielstände bestimmt der Gastgeber. Alle brauchen dieselbe Spieldatei.</li></ul>`)}
     ${sec('regeln', 'Hausregeln und Regelpakete', `<ul><li>Unter Einstellungen lassen sich die Regeln umstellen, auch mitten im Spiel. Der erste Reiter bietet fertige Pakete: Klassisch, Hotelkönige, Kurzes Spiel, Harte Bank und Entspannt.</li>
@@ -5810,7 +5893,9 @@ async function boot(data) {
   window.__booted = true;
   $('loading').style.opacity = 0;
   setTimeout(() => $('loading').remove(), 600);
-  if (saved && saved.S && (saved.S.v === 5 || saved.S.v === 6) && !(data && data.S)) openSetup(true);
+  let resume = false;
+  try { resume = sessionStorage.getItem('hk-resume') === '1'; sessionStorage.removeItem('hk-resume'); } catch (e) { /* egal */ }
+  if (saved && saved.S && (saved.S.v === 5 || saved.S.v === 6) && !(data && data.S)) { openSetup(true); if (resume && $('resume')) $('resume').click(); }
   else if (!(data && data.S)) openSetup(true);
   else schedule();
 }
@@ -6149,7 +6234,7 @@ const RULE_DEFS = [
   { g: 'hilfe', key: 'undo', title: 'Zug zurücknehmen', desc: 'Mit der Taste Z oder dem Knopf „Zurück“. „Bis zum Würfel“: Entscheidungen seit dem letzten Würfelwurf, der letzten Karte oder Versteigerung. „Unbegrenzt“: alles im eigenen Zug, zum Üben.', opts: [['off', 'Aus'], ['roll', 'Bis zum Würfel'], ['free', 'Unbegrenzt']] },
 ];
 const LOOK_TOGGLES = [
-  ['fullscreenOnStart', 'Beim Spielstart in den Vollbildmodus'],
+  ['fullscreenOnStart', 'Im Vollbild spielen (ab dem Spielstart)'],
   ['fastAI', 'Computerzüge im Schnelldurchlauf'],
   ['fast', 'Alle Züge im Schnelldurchlauf'],
   ['recap', 'Rückblick vor meinem Zug'],
@@ -6161,6 +6246,7 @@ const LOOK_TOGGLES = [
   ['danger', 'Gefahrenvorschau vor dem Würfeln'],
   ['hints', 'Hinweise beim ersten Mal'],
   ['music', 'Musik'],
+  ['voice', 'Sprachnachrichten der Mitspieler abspielen'],
   ['sound', 'Soundeffekte'],
 ];
 const DICE_SOUNDS = [['wood', 'Holztisch'], ['cup', 'Würfelbecher'], ['felt', 'Filz'], ['classic', 'Klassisch'], ['off', 'Aus']];
@@ -6183,9 +6269,10 @@ function openRuleEditor({ rules: start, mode, onApply, onCancel }) {
   clearTimeout(view.aiTimer);
   let rules = { ...DEFAULT_RULES, ...start };
   const look = { ...settings };
-  const groups = RULE_GROUPS.filter(g => (mode === 'look' ? g.id === 'look' : true));
-  let tab = view.ruleTab && groups.some(g => g.id === view.ruleTab) ? view.ruleTab : groups[0].id;
-  const segBtn = (key, v, label, cur, isStd, attr = 'rk') => `<button type="button" data-${attr}="${key}" data-rv='${JSON.stringify(v)}' aria-pressed="${sameVal(cur, v)}">${esc(label)}${isStd ? '<small>Standard</small>' : ''}</button>`;
+  const guest = mode === 'guest';   // Mitspieler im Online-Spiel: Regeln nur ansehen
+  const groups = RULE_GROUPS.filter(g => (mode === 'look' ? g.id === 'look' : guest ? g.id !== 'preset' : true));
+  let tab = guest ? 'look' : view.ruleTab && groups.some(g => g.id === view.ruleTab) ? view.ruleTab : groups[0].id;
+  const segBtn = (key, v, label, cur, isStd, attr = 'rk') => `<button type="button" data-${attr}="${key}" data-rv='${JSON.stringify(v)}' aria-pressed="${sameVal(cur, v)}" ${guest && attr === 'rk' ? 'disabled' : ''}>${esc(label)}${isStd ? '<small>Standard</small>' : ''}</button>`;
   let extra = {};
   const pane = () => {
     if (tab === 'preset') {
@@ -6206,7 +6293,7 @@ function openRuleEditor({ rules: start, mode, onApply, onCancel }) {
         <div class="ropt"><div class="ropt-h"><h5>Spielgefühl</h5></div><div class="toggles">${LOOK_TOGGLES.map(([k, l]) => `<label class="tgl"><input type="checkbox" data-lt="${k}" ${(k === 'hints' ? look[k] !== false : look[k]) ? 'checked' : ''}><span class="sw2"></span>${esc(l)}</label>`).join('')}</div>
           <div class="btns" style="margin-top:12px;max-width:320px"><button class="btn" type="button" id="se-hints"><span>Hinweise wieder von vorn zeigen</span></button></div></div>`;
     }
-    return RULE_DEFS.filter(d => d.g === tab).map(d => {
+    return (guest ? '<p class="hint ro-note">Diese Regeln gelten in diesem Online-Spiel. Ändern kann sie der Gastgeber.</p>' : '') + RULE_DEFS.filter(d => d.g === tab).map(d => {
       const changed = !sameVal(rules[d.key], DEFAULT_RULES[d.key]);
       return `<div class="ropt ${changed ? 'changed' : ''}"><div class="ropt-h"><h5>${esc(d.title)}</h5><p>${esc(d.desc)}</p></div>
         <div class="segx">${d.opts.map(([v, l]) => segBtn(d.key, v, l, rules[d.key], sameVal(v, DEFAULT_RULES[d.key]))).join('')}</div></div>`;
@@ -6216,7 +6303,7 @@ function openRuleEditor({ rules: start, mode, onApply, onCancel }) {
     const tot = changedTotal(rules);
     $('modal').innerHTML = `<div class="overlay"><div class="dialog sdlg" role="dialog" aria-modal="true" aria-labelledby="se-t">
       <div class="sdlg-head"><h2 id="se-t">${mode === 'look' ? 'Darstellung &amp; Ton' : 'Einstellungen'}</h2>
-        <p class="lead">${mode === 'game' ? 'Regeländerungen gelten sofort und werden für neue Spiele übernommen.' : mode === 'look' ? 'Die Regeln stellt der Gastgeber ein.' : 'Regeln gelten für das neue Spiel, Darstellung und Ton sofort. Mit „Standard“ markiert ist die abgestimmte Grundeinstellung.'}</p></div>
+        <p class="lead">${mode === 'game' ? 'Regeländerungen gelten sofort für diese Partie und werden für neue Spiele übernommen. Darstellung und Ton gelten sofort.' : mode === 'look' ? 'Die Regeln stellt der Gastgeber ein.' : guest ? 'Darstellung und Ton stellst du selbst ein. Die Regeln siehst du hier, festlegen kann sie nur der Gastgeber.' : 'Regeln gelten für die neue Partie, Darstellung und Ton sofort. Mit „Standard“ markiert ist die abgestimmte Grundeinstellung.'}</p></div>
       <div class="sbody">
         <nav class="stabs" role="tablist">${groups.map(g => {
           const n = g.id === 'look' || g.id === 'preset' ? 0 : changedIn(rules, g.id);
@@ -6225,7 +6312,7 @@ function openRuleEditor({ rules: start, mode, onApply, onCancel }) {
         <div class="spane" role="tabpanel">${pane()}</div>
       </div>
       <div class="sfoot"><span class="hint">${tot ? `${tot} ${tot === 1 ? 'Regel weicht' : 'Regeln weichen'} vom Standard ab.` : 'Alle Regeln stehen auf Standard.'}</span>
-        <div class="dacts">${tot ? '<button class="btn quiet" type="button" id="se-reset">Alles auf Standard</button>' : ''}<button class="btn" type="button" id="se-cancel" data-close>Abbrechen</button><button class="btn primary" type="button" id="se-ok">Übernehmen</button></div></div>
+        <div class="dacts">${tot && !guest ? '<button class="btn quiet" type="button" id="se-reset">Alles auf Standard</button>' : ''}<button class="btn" type="button" id="se-cancel" data-close>Abbrechen</button><button class="btn primary" type="button" id="se-ok">Übernehmen</button></div></div>
     </div></div>`;
   };
   const draw = () => keepScroll(drawRaw);
@@ -6234,7 +6321,7 @@ function openRuleEditor({ rules: start, mode, onApply, onCancel }) {
     const b = e.target.closest('button, input');
     if (!b) return;
     if (b.dataset.tab) { tab = view.ruleTab = b.dataset.tab; drawRaw(); return; }
-    if (b.dataset.rk) { rules[b.dataset.rk] = JSON.parse(b.dataset.rv); draw(); return; }
+    if (b.dataset.rk) { if (guest) return; rules[b.dataset.rk] = JSON.parse(b.dataset.rv); draw(); return; }
     if (b.dataset.preset) {
       const pr = PRESETS.find(p => p.id === b.dataset.preset);
       rules = presetRules(pr);
@@ -6259,18 +6346,34 @@ function openRuleEditor({ rules: start, mode, onApply, onCancel }) {
         Object.assign(settings, look, keepVol);
         if (settings.music) { sfx.unlock(); music.start(); } else music.stop();
         applyVolumes();
-        if (settings.quality !== qBefore) {
-          gfx.auto = null; gfx.autoSteps = 0; applyQuality();
-          // Formen und Extras entstehen beim Start: Hinweis, wenn sie sich mit dieser Wahl ändern würden
-          const willPracht = settings.quality === 'max';
-          if (willPracht !== PRACHT) later(() => toast(willPracht ? 'Fensterrahmen, Simse und mehr Pflanzen erscheinen ab dem nächsten Start' : 'Die Extras von „Maximal“ verschwinden ab dem nächsten Start'), 300);
-        }
+        if (settings.quality !== qBefore) { gfx.auto = null; gfx.autoSteps = 0; applyQuality(); }
         applyLook();
         syncToolButtons();
         save();
       }
       onApply(rules, extra);
+      // Fensterrahmen, Gauben und Pflanzen von „Maximal“ entstehen beim Start: kurzen Neustart anbieten
+      const willPracht = settings.quality === 'max';
+      if (willPracht !== PRACHT) {
+        if (netIsGuest()) later(() => toast(willPracht ? 'Die Extras von „Maximal“ erscheinen ab dem nächsten Start' : 'Die Extras von „Maximal“ verschwinden ab dem nächsten Start'), 300);
+        else askRestart(willPracht, mode === 'game', () => (mode === 'game' ? closeModal() : onApply(rules, extra)));
+      }
     }
+  };
+}
+// Einmal neu laden; eine laufende Partie geht danach sofort weiter (online öffnet der Raum mit demselben Code wieder)
+function askRestart(on, running, later) {
+  $('modal').onclick = null;
+  $('modal').innerHTML = `<div class="overlay"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="rs-t">
+    <h2 id="rs-t">${on ? 'Grafik „Maximal“' : 'Grafik umstellen'}</h2>
+    <p class="lead">${on ? 'Damit Fensterrahmen, Gauben und die vielen Pflanzen erscheinen, startet Hotelkönige einmal kurz neu.' : 'Damit die Extras von „Maximal“ verschwinden, startet Hotelkönige einmal kurz neu.'}
+      ${running ? `Deine Partie ist gespeichert und geht danach genau hier weiter.${netIsHost() ? ' Die Mitspieler verbinden sich von selbst wieder.' : ''}` : ''}</p>
+    <div class="dacts"><button class="btn quiet" type="button" id="rs-later" data-close>Später</button><button class="btn primary" type="button" id="rs-now" data-primary>Jetzt neu starten</button></div></div></div>`;
+  $('rs-later').onclick = () => { toast('Gilt ab dem nächsten Start'); later(); };
+  $('rs-now').onclick = () => {
+    save();
+    try { if (running) sessionStorage.setItem('hk-resume', '1'); } catch (e) { /* egal */ }
+    location.reload();
   };
 }
 function openSettings() {
@@ -9255,6 +9358,7 @@ function netHostMsg(conn, m) {
   if (m.t === 'ping') { netSend(conn, { t: 'pong' }); return; }
   if (m.t === 'req' && m.a && typeof m.a === 'object') { NET.reqs.push({ client: id, a: m.a, seq: m.seq, rid: m.rid }); netHostPump(); }
   else if (m.t === 'chat') netChatIn(id, m.text);
+  else if (m.t === 'voice') netVoiceIn(id, m);
   else if (m.t === 'sync?') netSendSync(id);
   else if (m.t === 'bye') { try { conn.close(); } catch (e) { /* egal */ } netHostDrop(conn); }
 }
@@ -9440,6 +9544,7 @@ function netGuestMsg(m) {
     case 'reject': netResolvePending(false); if (m.msg) toast(m.msg); renderTurn(); break;
     case 'deny': netFail(m.msg); break;
     case 'chat': netChatShow(m.seat, m.name, m.text); break;
+    case 'voice': { const v = netVoiceClean(m); if (v) voiceShow(m.seat, String(m.name || ''), v.buf, v.mime, v.ms, false); break; }
     case 'bye': netHostLeft(); break;
   }
 }
@@ -9508,6 +9613,7 @@ function netClose(silent) {
   setTimeout(() => { try { if (peer && !peer.destroyed) peer.destroy(); } catch (e) { /* egal */ } }, 300);
   clearTimeout(NET.retry); clearTimeout(NET.connTimer);
   netResolvePending(false);
+  voiceRelease();
   Object.assign(NET, { on: false, role: null, peer: null, state: 'off', hostConn: null, clients: new Map(), mySeats: [], queue: [], reqs: [], applying: null, waitSync: false, retryUntil: 0, lobby: null });
   view.catchup = false;
   if (was === 'guest') NET.seat = [];
@@ -9582,8 +9688,148 @@ function netChatHTML() {
   if (!NET.chat.length) return '<p class="hint">Noch keine Nachrichten.</p>';
   return NET.chat.map(m => {
     const col = m.seat >= 0 && S.players[m.seat] ? S.players[m.seat].color : '#b4a88f';
+    if (m.voice) {
+      const ok = VOICE.list.some(v => v.id === m.voice);
+      return `<div class="cmsg"><b style="color:${col}">${esc(m.name)}</b> <button class="vplay" type="button" data-voice="${esc(m.voice)}" ${ok ? '' : 'disabled'}><span aria-hidden="true">▶</span> Sprachnachricht · ${(m.ms / 1000).toFixed(1).replace('.', ',')} s</button></div>`;
+    }
     return `<div class="cmsg"><b style="color:${col}">${esc(m.name)}</b> ${esc(m.text)}</div>`;
   }).join('');
+}
+
+// ---------------- Sprachnachrichten: V gedrückt halten, sprechen, loslassen ----------------
+const VOICE = { stream: null, rec: null, chunks: [], t0: 0, ms: 0, timer: null, idle: null, tick: null, state: 'off', want: false, send: false, list: [], queue: [], playing: null, n: 0 };
+const VOICE_MAX = 15000;
+const VOICE_MIMES = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg'];
+function voiceSupported() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder); }
+function voiceMime() { for (const m of VOICE_MIMES) { try { if (MediaRecorder.isTypeSupported(m)) return m; } catch (e) { /* egal */ } } return ''; }
+async function voiceStart() {
+  if (!NET.on || VOICE.state !== 'off') return;
+  if (!voiceSupported()) { toast('Sprachnachrichten gehen in diesem Browser nicht.'); return; }
+  VOICE.state = 'opening'; VOICE.want = true; voiceChip();
+  clearTimeout(VOICE.idle);
+  try {
+    if (!VOICE.stream || !VOICE.stream.active) VOICE.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+  } catch (e) {
+    VOICE.state = 'off'; voiceChip();
+    toast(e && e.name === 'NotAllowedError' ? 'Das Mikrofon ist nicht freigegeben. Erlaube es oben in der Adressleiste.' : 'Kein Mikrofon gefunden.');
+    return;
+  }
+  // schon losgelassen, während die Freigabe kam: nichts aufnehmen
+  if (!VOICE.want || !NET.on) { VOICE.state = 'off'; voiceChip(); voiceIdle(); return; }
+  const mime = voiceMime();
+  let rec;
+  try { rec = new MediaRecorder(VOICE.stream, mime ? { mimeType: mime, audioBitsPerSecond: 24000 } : undefined); } catch (e) { rec = new MediaRecorder(VOICE.stream); }
+  VOICE.rec = rec; VOICE.chunks = []; VOICE.t0 = performance.now();
+  rec.ondataavailable = ev => { if (ev.data && ev.data.size) VOICE.chunks.push(ev.data); };
+  rec.onstop = () => voiceDone(rec);
+  rec.start();
+  VOICE.state = 'rec';
+  voiceChip();
+  clearInterval(VOICE.tick); VOICE.tick = setInterval(voiceChip, 200);
+  VOICE.timer = setTimeout(() => voiceStop(true), VOICE_MAX);
+}
+function voiceStop(send) {
+  VOICE.want = false;
+  if (VOICE.state !== 'rec') return;
+  clearTimeout(VOICE.timer); clearInterval(VOICE.tick);
+  VOICE.ms = Math.round(performance.now() - VOICE.t0);
+  VOICE.send = send && VOICE.ms > 350;
+  if (send && !VOICE.send) toast('Zum Sprechen V länger gedrückt halten');
+  VOICE.state = 'stopping';
+  voiceChip();
+  try { VOICE.rec.stop(); } catch (e) { VOICE.state = 'off'; voiceChip(); }
+}
+async function voiceDone(rec) {
+  const chunks = VOICE.chunks, send = VOICE.send, ms = VOICE.ms;
+  VOICE.rec = null; VOICE.chunks = []; VOICE.state = 'off';
+  voiceChip(); voiceIdle();
+  if (!send || !chunks.length || !NET.on) return;
+  const blob = new Blob(chunks, { type: (rec.mimeType || chunks[0].type || 'audio/webm').split(';')[0] });
+  if (blob.size > 400000) { toast('Die Sprachnachricht ist zu groß.'); return; }
+  netVoiceSend(await blob.arrayBuffer(), blob.type, ms);
+}
+// Mikrofon nach zwei Minuten Ruhe wieder freigeben (dann verschwindet auch das Mikrofon-Zeichen im Browser)
+function voiceIdle() { clearTimeout(VOICE.idle); VOICE.idle = setTimeout(voiceRelease, 120000); }
+function voiceRelease() {
+  clearTimeout(VOICE.idle);
+  if (VOICE.state === 'rec') voiceStop(false);
+  if (VOICE.stream) { VOICE.stream.getTracks().forEach(t => t.stop()); VOICE.stream = null; }
+}
+function voiceChip() {
+  const el = $('voicechip');
+  if (!el) return;
+  el.hidden = VOICE.state === 'off';
+  el.classList.toggle('rec', VOICE.state === 'rec');
+  if (VOICE.state === 'opening') el.textContent = 'Mikrofon wird geöffnet …';
+  else if (VOICE.state === 'rec') { const s = Math.max(0, Math.floor((performance.now() - VOICE.t0) / 1000)); el.innerHTML = `<i></i>Aufnahme ${s} s · loslassen schickt sie ab`; }
+  else if (VOICE.state === 'stopping') el.textContent = 'Wird gesendet …';
+}
+// Senden: Gast an den Gastgeber, der Gastgeber an alle
+function netVoiceSend(buf, mime, ms) {
+  if (!NET.on) return;
+  if (NET.role === 'guest') {
+    if (!NET.hostConn || !NET.hostConn.open) { toast('Keine Verbindung zum Gastgeber.'); return; }
+    netSend(NET.hostConn, { t: 'voice', data: buf, mime, ms });
+    const me = NET.mySeats[0] ?? -1;
+    voiceShow(me, me >= 0 ? S.players[me].name : NET.name || 'Du', buf, mime, ms, true);
+    return;
+  }
+  const seat = NET.seat.findIndex(s => s.kind === 'local');
+  netVoiceOut(seat, seat >= 0 ? S.players[seat].name : 'Gastgeber', buf, mime, ms, null);
+  voiceShow(seat, seat >= 0 ? S.players[seat].name : 'Gastgeber', buf, mime, ms, true);
+}
+function netVoiceClean(m) {
+  const d = m && m.data;
+  const buf = d instanceof ArrayBuffer ? d : ArrayBuffer.isView(d) ? d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength) : null;
+  if (!buf || buf.byteLength < 20 || buf.byteLength > 400000) return null;
+  const mime = VOICE_MIMES.map(x => x.split(';')[0]).includes(String(m.mime || '').split(';')[0]) ? String(m.mime).split(';')[0] : 'audio/webm';
+  return { buf, mime, ms: clamp(+m.ms || 0, 0, VOICE_MAX + 1000) };
+}
+function netVoiceIn(id, m) {
+  const v = netVoiceClean(m);
+  if (!v) return;
+  const seat = NET.seat.findIndex(s => s.client === id);
+  const c = NET.clients.get(id);
+  const name = seat >= 0 ? S.players[seat].name : (c ? c.name : 'Gast');
+  netVoiceOut(seat, name, v.buf, v.mime, v.ms, id);
+  voiceShow(seat, name, v.buf, v.mime, v.ms, false);
+}
+function netVoiceOut(seat, name, buf, mime, ms, except) {
+  for (const [id, c] of NET.clients) if (id !== except) netSend(c.conn, { t: 'voice', seat, name, data: buf, mime, ms });
+}
+// Im Chat ablegen und (außer der eigenen) gleich abspielen
+function voiceShow(seat, name, buf, mime, ms, own) {
+  const id = 'v' + (++VOICE.n);
+  const url = URL.createObjectURL(new Blob([buf], { type: mime }));
+  VOICE.list.push({ id, url, seat });
+  while (VOICE.list.length > 12) { const old = VOICE.list.shift(); URL.revokeObjectURL(old.url); }
+  NET.chat.push({ seat, name, voice: id, ms });
+  if (NET.chat.length > 60) NET.chat.shift();
+  const list = document.querySelector('#modal .netchat-list');
+  if (list) { list.innerHTML = netChatHTML(); list.scrollTop = list.scrollHeight; }
+  if (own) return;
+  if (settings.voice === false) { toast(`${name} hat eine Sprachnachricht geschickt`); return; }
+  voicePlay(id, false);
+}
+function voicePlay(id, manual) {
+  const v = VOICE.list.find(x => x.id === id);
+  if (!v) return;
+  if (manual && VOICE.playing) { try { VOICE.playing.a.pause(); } catch (e) { /* egal */ } VOICE.playing = null; VOICE.queue.length = 0; }
+  VOICE.queue.push(v);
+  voiceNext();
+}
+function voiceNext() {
+  if (VOICE.playing || !VOICE.queue.length) return;
+  const v = VOICE.queue.shift();
+  const a = new Audio(v.url);
+  a.volume = clamp((settings.voiceVol ?? 100) / 100, 0, 1);
+  VOICE.playing = { a, v };
+  applyVolumes();   // Musik leiser, solange jemand spricht
+  const done = () => { if (VOICE.playing && VOICE.playing.a === a) { VOICE.playing = null; applyVolumes(); voiceNext(); } };
+  a.onended = done; a.onerror = done;
+  const car = v.seat >= 0 && W3.cars[v.seat];
+  if (car && car.visible) say(v.seat, '🎙 …');
+  a.play().catch(() => { done(); toast('Sprachnachricht: im Online-Fenster (C) auf ▶ klicken'); });
 }
 
 // ---------------- Startmenü: Lobby ----------------
@@ -9687,9 +9933,13 @@ function netShowLobby() {
 function netShowLobbyAgain() { $('modal').onclick = null; $('modal').innerHTML = ''; netShowLobby(); }
 
 // Online-Fenster im Spiel: Plätze, Verbindungen, Chat
+// Öffnet mit C (Schreibfeld hat gleich den Fokus), Esc oder C schließt. „Raum schließen“ steht oben und fragt nach.
 function netPanel() {
   if (!NET.on && !netCanReopen()) return;
+  let confirmEnd = false;
   const draw = () => {
+    // angefangene Nachricht und Fokus über das Neuzeichnen retten
+    const old = $('np-msg'), draft = old ? old.value : '', hadFocus = old && document.activeElement === old, caret = old ? old.selectionStart : null;
     const host = netIsHost(), guest = netIsGuest();
     const stateTxt = !NET.on ? 'Kein Raum offen.' : NET.state === 'open' ? 'verbunden' : NET.state === 'lost' ? 'Verbindung verloren, versuche es erneut …' : NET.state === 'gone' ? 'keine Verbindung zum Gastgeber' : 'verbinde …';
     const seats = S.players.map((p, i) => {
@@ -9700,32 +9950,59 @@ function netPanel() {
       const ctl = host && !p.out ? `<div class="seg mini">${[['local', 'Hier'], ['online', 'Online'], ['ai', 'Computer']].map(([k, l]) => `<button type="button" data-seat="${i}" data-kind="${k}" aria-pressed="${kind === k && !(k === 'ai' && s.took)}">${l}</button>`).join('')}</div>` : '';
       return `<div class="nseat ${guest && s.you ? 'you' : ''}"><span class="tdot" style="--pc:${p.color}"></span><b>${esc(p.name)}</b><span class="hint">${p.out ? 'pleite' : label}</span>${ctl}</div>`;
     }).join('');
+    const endBtn = host ? 'Raum schließen' : guest ? 'Spiel verlassen' : '';
+    const endWhat = host ? 'Alle Mitspieler werden getrennt, das Spiel läuft hier am PC weiter.' : 'Du verlässt das Online-Spiel und kommst zurück zu deinem eigenen Spiel.';
+    const danger = endBtn ? (confirmEnd
+      ? `<div class="nend ask"><span>${esc(endWhat)}</span><button class="btn quiet" type="button" id="np-end-no">Nein</button><button class="btn danger" type="button" id="np-end-yes">${esc(endBtn)}</button></div>`
+      : `<button class="btn quiet small nendbtn" type="button" id="np-end">${esc(endBtn)} …</button>`) : '';
     $('modal').innerHTML = `<div class="overlay"><div class="dialog netpanel" role="dialog" aria-modal="true" aria-labelledby="np-t">
-      <h2 id="np-t">Online-Spiel</h2>
+      <div class="np-head"><h2 id="np-t">Online-Spiel</h2>${confirmEnd ? '' : danger}</div>
+      ${confirmEnd ? danger : ''}
       ${NET.on ? `<div class="ncode"><span>Raumcode</span><b class="num">${esc(NET.code)}</b><button class="btn" type="button" id="net-copy">Kopieren</button><span class="nstat ${NET.state === 'open' ? 'ok' : ''}">${esc(stateTxt)}</span></div>` : `<p class="lead">Der Online-Raum für dieses Spiel ist geschlossen.</p>`}
       ${host ? '<p class="hint">Plätze lassen sich hier umstellen. Fehlt ein Mitspieler, kann der Computer übernehmen, bis er zurück ist. Mitspieler kommen mit demselben Code und Namen wieder herein.</p>' : ''}
       <div class="nseats">${seats}</div>
       ${NET.on ? `<div class="netchat"><div class="netchat-list">${netChatHTML()}</div>
-        <form class="netchat-in" id="np-form"><input type="text" id="np-msg" maxlength="160" placeholder="Nachricht an alle …" autocomplete="off"><button class="btn" type="submit">Senden</button></form></div>` : ''}
-      <div class="dacts">${host ? '<button class="btn quiet" type="button" id="np-close">Raum schließen</button>' : guest ? '<button class="btn quiet" type="button" id="np-leave">Spiel verlassen</button>' : '<button class="btn" type="button" id="np-reopen">Raum wieder öffnen</button>'}
+        <form class="netchat-in" id="np-form"><input type="text" id="np-msg" maxlength="160" placeholder="Nachricht an alle …" autocomplete="off" enterkeyhint="send"><button class="btn" type="submit">Senden</button>${voiceSupported() ? '<button class="btn vbtn" type="button" id="np-mic" aria-label="Gedrückt halten für eine Sprachnachricht" title="Gedrückt halten für eine Sprachnachricht (Taste V)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>' : ''}</form>
+        <p class="hint np-keys">${TOUCH ? 'Mikrofon gedrückt halten für eine Sprachnachricht.' : 'Enter schickt · Mikrofon gedrückt halten (im Spiel einfach <kbd>V</kbd> halten) für eine Sprachnachricht · <kbd>Esc</kbd> zurück zum Spiel'}</p></div>` : ''}
+      <div class="dacts">${!NET.on ? '<button class="btn" type="button" id="np-reopen">Raum wieder öffnen</button>' : ''}
         ${guest && NET.state === 'gone' ? '<button class="btn" type="button" id="np-retry">Erneut verbinden</button>' : ''}
-        <button class="btn primary" type="button" id="np-ok" data-close data-primary>Schließen</button></div></div></div>`;
+        <button class="btn primary" type="button" id="np-ok" data-close data-primary>Zurück zum Spiel</button></div></div></div>`;
     const list = document.querySelector('#modal .netchat-list');
     if (list) list.scrollTop = list.scrollHeight;
     const f = $('np-form');
     if (f) f.onsubmit = ev => { ev.preventDefault(); const el = $('np-msg'); netChatSend(el.value); el.value = ''; el.focus(); };
+    const inp = $('np-msg');
+    if (inp) {
+      inp.value = draft;
+      if (hadFocus) { inp.focus({ preventScroll: true }); try { inp.setSelectionRange(caret, caret); } catch (e) { /* egal */ } }
+    }
+    const mic = $('np-mic');
+    if (mic) {
+      mic.addEventListener('pointerdown', ev => { ev.preventDefault(); try { mic.setPointerCapture(ev.pointerId); } catch (e) { /* egal */ } mic.classList.add('on'); voiceStart(); });
+      const up = () => { mic.classList.remove('on'); voiceStop(true); };
+      mic.addEventListener('pointerup', up);
+      mic.addEventListener('pointercancel', () => { mic.classList.remove('on'); voiceStop(false); });
+    }
   };
   NET.panelDraw = () => keepScroll(draw);
   draw();
+  // gleich losschreiben können (auf dem Handy nicht: dort würde sofort die Tastatur aufgehen)
+  if (!TOUCH) { const inp = $('np-msg'); if (inp) inp.focus({ preventScroll: true }); }
   $('modal').onclick = e => {
     const b = e.target.closest('button');
     if (!b) return;
     if (b.id === 'np-ok') { NET.panelDraw = null; closeModal(); }
     else if (b.id === 'net-copy') netCopyCode(b);
-    else if (b.id === 'np-close') { netClose(); NET.panelDraw = null; closeModal(); renderHUD(); toast('Raum geschlossen. Alle Plätze spielen jetzt an diesem PC.'); }
-    else if (b.id === 'np-leave') { NET.panelDraw = null; netClose(); netBackHome(); }
+    else if (b.id === 'np-end') { confirmEnd = true; draw(); const y = $('np-end-no'); if (y) y.focus(); }
+    else if (b.id === 'np-end-no') { confirmEnd = false; draw(); }
+    else if (b.id === 'np-end-yes') {
+      NET.panelDraw = null;
+      if (netIsHost()) { netClose(); closeModal(); renderHUD(); toast('Raum geschlossen. Alle Plätze spielen jetzt an diesem PC.'); }
+      else { netClose(); netBackHome(); }
+    }
     else if (b.id === 'np-retry') { NET.retryUntil = Date.now() + 120000; NET.state = 'lost'; netRetry(); draw(); }
     else if (b.id === 'np-reopen') { netReopen(); draw(); }
+    else if (b.dataset.voice) voicePlay(b.dataset.voice, true);
     else if (b.dataset.seat !== undefined) { netSetSeatKind(+b.dataset.seat, b.dataset.kind); draw(); }
   };
 }
@@ -9761,7 +10038,7 @@ function netUi() {
     else chip.hidden = true;
     fitTopbar();
   }
-  if (NET.panelDraw && document.querySelector('#modal .netpanel') && !(document.activeElement && document.activeElement.id === 'np-msg')) NET.panelDraw();
+  if (NET.panelDraw && document.querySelector('#modal .netpanel')) NET.panelDraw();
   if (NET.setupRedraw && document.querySelector('#modal .setup')) NET.setupRedraw();
 }
 // Statuszeile im Zug-Fenster, wenn ein Mitspieler an einem anderen PC am Zug ist
@@ -9825,11 +10102,20 @@ function applyKeys(dt) {
   if (keysDown.has('zoomOut')) { d.r = clamp(d.r * (1 + 1.1 * dt), minR(), maxR()); camState.userZoomed = true; }
 }
 function onKeyDown(e) {
-  if (e.target.closest && e.target.closest('input, select, textarea')) return;
+  const inField = e.target.closest && e.target.closest('input, select, textarea');
+  // Esc schließt ein Fenster auch dann, wenn gerade ein Eingabefeld (z. B. der Chat) den Fokus hat
+  if (e.key === 'Escape' && $('modal').innerHTML && $('logov').hidden) {
+    const c = document.querySelector('#modal [data-close]');
+    if (c) { e.preventDefault(); c.click(); return; }
+  }
+  if (inField) return;
   if (!$('endscreen').hidden) return;
   if (!$('logov').hidden) { logKeys(e); return; }
+  // Sprachnachricht: V gedrückt halten (auch bei offenem Online-Fenster)
+  if ((e.key === 'v' || e.key === 'V') && NET.on) { e.preventDefault(); if (!e.repeat) voiceStart(); return; }
   if ($('modal').innerHTML) {
-    if (e.key === 'Escape') { const c = document.querySelector('#modal [data-close]'); if (c) c.click(); }
+    // C schließt das Online-Fenster wieder
+    if ((e.key === 'c' || e.key === 'C') && document.querySelector('#modal .netpanel')) { e.preventDefault(); const c = document.querySelector('#modal [data-close]'); if (c) c.click(); return; }
     const pr = document.querySelector('#modal [data-primary]');
     if ((e.key === ' ' || e.key === 'Enter') && pr && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); pr.click(); }
     return;
@@ -9838,8 +10124,12 @@ function onKeyDown(e) {
   if (k) { keysDown.add(k); e.preventDefault(); return; }
   switch (e.key) {
     case ' ': case 'Enter': {
+      // läuft noch eine Animation, beschleunigt die Leertaste sie
+      if (view.busy) { e.preventDefault(); hurry(); break; }
       const p = document.querySelector('#turn-body [data-primary]');
-      if (p && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); p.click(); }
+      // ein Knopf oben in der Leiste behält sonst den Fokus und würde statt des Würfelns gedrückt
+      const onBtn = e.target.closest && e.target.closest('button');
+      if (p && (!onBtn || onBtn.closest('.topbar, .logpanel'))) { e.preventDefault(); p.click(); }
       break;
     }
     case 'Escape': view.sel = null; renderDeed(); break;
@@ -9847,7 +10137,7 @@ function onKeyDown(e) {
     case 'p': case 'P': e.preventDefault(); toggleLog(); break;
     case 'Tab': e.preventDefault(); openOverview(); break;
     case 'h': case 'H': case '?': openKeys(); break;
-    case 'c': case 'C': if (NET.on) netPanel(); break;
+    case 'c': case 'C': if (NET.on || netCanReopen()) { e.preventDefault(); netPanel(); } break;
     case 'f': case 'F': toggleFullscreen(); break;
     case 'm': case 'M': toggleMusic(); break;
     case 'Home': camPreset('overview'); break;
@@ -9863,13 +10153,14 @@ const KEYS = [
   ['Pos1', 'Übersicht'],
   ['T', 'Draufsicht'],
   ['P', 'Protokoll öffnen, Spiel pausiert'],
-  ['C', 'Online-Fenster mit Chat (nur im Online-Spiel)'],
+  ['C', 'Online-Fenster mit Chat öffnen, gleich losschreiben (nur online)'],
+  ['V halten', 'Sprachnachricht aufnehmen, loslassen schickt sie ab (nur online)'],
   ['F', 'Vollbild an oder aus'],
   ['M', 'Musik an oder aus'],
   ['Z', 'Zug zurücknehmen (wenn in den Hausregeln eingeschaltet)'],
   ['Tab', 'Hotels im Überblick: Ausbau, Eingänge, Einnahmen'],
   ['H', 'diese Übersicht'],
-  ['Esc', 'Fenster schließen, Auswahl aufheben'],
+  ['Esc', 'Fenster schließen (auch aus dem Chat heraus), Auswahl aufheben'],
 ];
 function keysHTML() {
   return `<div class="keys">${KEYS.map(([k, v]) => `<kbd>${esc(k)}</kbd><span>${esc(v)}</span>`).join('')}</div>
@@ -9965,10 +10256,10 @@ function openQuit() {
   const running = S && S.phase !== 'over';
   const netNote = netIsHost() ? ' Der Online-Raum wird dabei geschlossen.' : netIsGuest() ? ' Du verlässt dabei den Online-Raum.' : '';
   $('modal').innerHTML = `<div class="overlay"><div class="dialog quitdlg" role="dialog" aria-modal="true" aria-labelledby="qu-t">
-    <h2 id="qu-t">${running ? 'Partie beenden?' : 'Spiel beenden?'}</h2>
+    <h2 id="qu-t">Was möchtest du beenden?</h2>
     <div class="quitopts">
-      <button class="qopt" type="button" id="qu-menu"><b>Zum Hauptmenü</b><span>${running && !netIsGuest() ? 'Die Partie endet hier, das Spiel bleibt offen. Dein Stand ist gesichert: Im Hauptmenü holt „Letztes Spiel fortsetzen“ ihn zurück.' : 'Zurück zum Startbildschirm, um eine neue Partie zu beginnen.'}${netNote}</span></button>
-      <button class="qopt" type="button" id="qu-yes"><b>Spiel schließen</b><span>${running ? `Alles wird gespeichert. Beim nächsten Start geht es in Runde ${S.round} genau hier weiter.` : 'Das Spiel wird geschlossen.'}${netNote}</span></button>
+      <button class="qopt" type="button" id="qu-menu"><b>${running ? 'Nur diese Partie' : 'Zum Hauptmenü'}</b><span>${running && !netIsGuest() ? 'Zurück ins Hauptmenü, Hotelkönige bleibt offen. Die Partie ist gesichert und lässt sich dort mit „Letztes Spiel fortsetzen“ weiterspielen.' : running ? 'Zurück ins Hauptmenü, Hotelkönige bleibt offen.' : 'Zurück zum Startbildschirm, um eine neue Partie zu beginnen.'}${netNote}</span></button>
+      <button class="qopt" type="button" id="qu-yes"><b>Hotelkönige ganz schließen</b><span>${running ? `Das Programm wird beendet. Alles ist gespeichert, beim nächsten Start geht es in Runde ${S.round} genau hier weiter.` : 'Das Programm wird beendet.'}${netNote}</span></button>
     </div>
     <div class="dacts"><button class="btn primary" type="button" id="qu-no" data-close data-primary>Weiterspielen</button></div></div></div>`;
   $('qu-no').onclick = () => closeModal();
@@ -10019,8 +10310,8 @@ function wakeUp() {
   sfx.unlock();
   if (settings.music) music.start();
 }
-$('end-resume').onclick = () => { wakeUp(); schedule(); };
-$('end-new').onclick = () => { wakeUp(); openSetup(); };
+$('end-resume').onclick = () => { wakeUp(); if (view.quitFromMenu) { view.quitFromMenu = false; openSetup(true); } else schedule(); };
+$('end-new').onclick = () => { view.quitFromMenu = false; wakeUp(); openSetup(); };
 
 // ---------------- Darstellungsoptionen ----------------
 const DISPLAY_OPTS = [
@@ -10037,7 +10328,7 @@ const DISPLAY_OPTS = [
 ];
 // ---------------- Lautstärke ----------------
 const sfxLevel = () => (clamp(settings.sfxVol ?? 30, 0, 100) / 100) * 0.9;
-const musicLevel = () => (clamp(settings.musicVol ?? 75, 0, 100) / 100) * 0.3;
+const musicLevel = () => (clamp(settings.musicVol ?? 75, 0, 100) / 100) * 0.3 * (VOICE.playing ? 0.25 : 1);
 function applyVolumes() {
   const c = sfx.ctx;
   if (!c) return;
