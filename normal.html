@@ -668,8 +668,8 @@ body.phone.ph-land .sbody { grid-template-columns: 170px minmax(0, 1fr); }
 .nendbtn:hover:not(:disabled) { color: #ffb4a3; border-color: rgba(255,140,120,.6); }
 .nend.ask { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 4px 0 10px; padding: 10px 12px; border: 1px solid rgba(255,120,100,.45); border-radius: 12px; background: rgba(120,30,20,.25); }
 .nend.ask span { flex: 1 1 220px; font-size: 14px; }
-.btn.danger { background: #8e2a1f; border-color: #c0483a; color: #fff3ee; justify-content: center; font-weight: 600; }
-.btn.danger:hover:not(:disabled) { background: #a6342a; border-color: #e0604f; }
+.btn.warnbtn { background: #8e2a1f; border-color: #c0483a; color: #fff3ee; justify-content: center; font-weight: 600; }
+.btn.warnbtn:hover:not(:disabled) { background: #a6342a; border-color: #e0604f; }
 .vbtn { flex: none; display: inline-flex; align-items: center; justify-content: center; padding: 8px 11px; touch-action: none; user-select: none; -webkit-user-select: none; }
 .vbtn.on { background: #b8322a; border-color: #ff7a6a; color: #fff; }
 .np-keys { margin: 8px 2px 0; }
@@ -695,6 +695,21 @@ body.phone .voicechip { top: auto; bottom: calc(46vh + 56px); }
 .ro-note { margin: 0 0 10px; }
 
 .segx button:disabled { cursor: default; }
+
+/* Infokästen (Hotelkarte, Die nächsten 6 Felder) links bei den Hoteliers */
+body.info-left .col.left { overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
+.dangerpanel { padding: 10px 12px; }
+.dangerpanel .danger { margin-top: 0; }
+body.info-left .col.left #deed table.deed { font-size: 12px; }
+body.info-left .col.left #deed .deed th, body.info-left .col.left #deed .deed td { padding: 3px 2px; }
+body.info-left .col.left #deed .deed-name { font-size: 21px; }
+body.phone #dangerbox { display: none; }
+
+body.info-left .col.left { width: 300px; }
+@media (max-width: 1180px) { body.info-left .col.left { width: 270px; } }
+body.info-left .col.left #deed .deed th { font-size: 10px; letter-spacing: .6px; }
+body.info-left .col.left #deed > p.hint { display: none; }
+body.info-left .col.left .panel#deed { padding: 12px 14px; }
 </style>
 
 <div class="loading" id="loading"><div>Hotelkönige<small>Das Brett wird aufgebaut …</small><div class="lhint">Bleibt es hier stehen? Dann zeigt gerade eine Vorschau die Datei an, zum Beispiel in Google Drive, der Dateien-App oder einer Mail. Eine Vorschau kann das Spiel nicht starten.<br><br>Am PC oder Mac: Datei herunterladen und mit einem Browser öffnen (Chrome, Edge, Firefox oder Safari).<br>Auf iPhone und iPad klappt es nur über einen Weblink zum Spiel.</div></div></div>
@@ -754,6 +769,7 @@ document.documentElement.className += ' js';
     </div>
     <aside class="col left">
       <section class="panel"><h3>Hoteliers</h3><div class="players" id="players"></div></section>
+      <section class="panel dangerpanel" id="dangerbox" hidden></section>
     </aside>
     <aside class="col right">
       <button class="phgrip" type="button" id="phgrip" aria-label="Leiste größer oder kleiner"></button>
@@ -801,7 +817,7 @@ document.documentElement.className += ' js';
 
 </script>
 <script>
-const ENGINE_HASH = '8f3c50e857';
+const ENGINE_HASH = 'aee7eb4757';
 // Ältere Browser (Safari vor 15.4) kennen structuredClone noch nicht
 if (typeof structuredClone !== 'function') globalThis.structuredClone = o => JSON.parse(JSON.stringify(o));
 // ================= HOTEL – SPIEL-ENGINE =================
@@ -1743,7 +1759,7 @@ function enterStep(st, step) {
 
 // ---------- Zahlungen, Geldnot, Pleite ----------
 // Rückgabe true = erledigt (bezahlt oder pleite), false = Geldnot
-function pay(st, amount, to, reason) {
+function pay(st, amount, to, reason, hotel) {
   const p = st.players[st.cur];
   if (p.cash >= amount) {
     p.cash -= amount;
@@ -1752,10 +1768,11 @@ function pay(st, amount, to, reason) {
   }
   if (ownedHotels(st, st.cur).length || p.dep) {
     st.debt = { amount, to, reason };
+    if (hotel !== undefined) st.debt.hotel = hotel;
     enterDebt(st);
     return false;
   }
-  bankrupt(st, to);
+  bankrupt(st, to, amount, hotel);
   return true;
 }
 function enterDebt(st) {
@@ -1776,11 +1793,32 @@ function settleDebt(st) {
     afterSaleSecure(st);
     proceed(st);
   } else if (ownedHotels(st, st.cur).length || p.dep) enterDebt(st);
-  else { st.debt = null; bankrupt(st, to); }
+  else { const h = st.debt.hotel; st.debt = null; bankrupt(st, to, amount, h); }
 }
-function bankrupt(st, to) {
+// owed = Rechnung, die nicht mehr ganz bezahlt werden kann; hotel = Übernachtung in diesem Hotel
+function bankrupt(st, to, owed, hotel) {
   const p = st.players[st.cur];
-  if (to !== null) st.players[to].cash += p.cash;
+  const paid = Math.max(0, p.cash);
+  if (to !== null) st.players[to].cash += paid;
+  // Klartext im Protokoll: wer wie viel bekommt und was verloren ist
+  if (owed > paid) {
+    const lost = owed - paid;
+    // die Zeile „… zahlt 2.400 € an …“ stimmt so nicht mehr: als Rechnung umschreiben
+    for (let i = st.log.length - 1; i >= 0 && st.log[i].turn === st.turn; i--) {
+      const L = st.log[i];
+      if (L.k === 'pay' && L.p === st.cur && L.t.includes(`zahlt ${fmt(owed)} an `)) { L.t = L.t.replace(/zahlt (.+?) an (.+?)( \(|\.$)/, 'müsste $1 an $2 zahlen$3'); break; }
+    }
+    log(st, to !== null
+      ? `${p.name} kann nur ${fmt(paid)} der ${fmt(owed)} bezahlen. ${pname(st, to)} bekommt ${fmt(paid)}, ${fmt(lost)} sind verloren.`
+      : `${p.name} kann nur ${fmt(paid)} der ${fmt(owed)} bezahlen. Den Rest von ${fmt(lost)} bekommt die Bank nicht mehr.`, 'bad');
+    // Einnahmen-Statistik auf das tatsächlich Gezahlte korrigieren
+    if (hotel !== undefined && to !== null) {
+      const S2 = stats(st);
+      S2[to].stayIn -= lost; S2[st.cur].stayOut -= lost;
+      if (S2[to].hotelIncome[hotel]) S2[to].hotelIncome[hotel] -= lost;
+      st.hotels[hotel].earned = Math.max(0, (st.hotels[hotel].earned || 0) - lost);
+    }
+  }
   p.cash = 0;
   p.out = true;
   if (debtOf(p)) log(st, `Die Bank bleibt auf ${fmt(debtOf(p))} Kreditschulden von ${p.name} sitzen.`);
@@ -1791,7 +1829,7 @@ function bankrupt(st, to) {
   st.bz = null;
   st.secureAfter = false;
   log(st, `${p.name} ist pleite und scheidet aus.`, 'bad');
-  st.event = { kind: 'bankrupt', player: st.cur };
+  st.event = { kind: 'bankrupt', player: st.cur, to, owed: owed || 0, paid };
   const act = activePlayers(st);
   if (act.length === 1) {
     recordHistory(st);
@@ -2036,7 +2074,7 @@ function act(st0, a) {
       if (!st.records.bigBill || amount > st.records.bigBill.amount) st.records.bigBill = { payer: st.cur, owner, hotel: h, amount, nights: n, round: st.round };
       st.hotels[h].earned = (st.hotels[h].earned || 0) + amount;
       S2[st.cur].stayOut += amount;
-      if (pay(st, amount, owner, t)) { if (st.phase !== 'over' && !p.out) proceed(st); }
+      if (pay(st, amount, owner, t, h)) { if (st.phase !== 'over' && !p.out) proceed(st); }
       break;
     }
     case 'buyLand': {
@@ -2625,7 +2663,7 @@ const TOUCH = (() => { try { return matchMedia('(pointer: coarse)').matches && !
 const PLAYER_COLORS = ['#e8384f', '#2f86f6', '#2fc46b', '#f5c518'];
 const SAVE_KEY = 'hotel-3d-v5';
 let S = null;
-let settings = { musicVol: 75, sfxVol: 30, fast: false, fastAI: true, autoEnd: false, follow: false, sound: true, music: true, labels: true, daynight: 'cycle', cinematic: true, recap: true, fullscreenOnStart: true, quips: 'often', quality: 'auto', voice: true, hints: true, danger: false, entLabels: true, neon: true, life: true, miniature: false, diceSound: 'wood' };
+let settings = { musicVol: 75, sfxVol: 30, fast: false, fastAI: true, autoEnd: false, follow: false, sound: true, music: true, labels: true, daynight: 'cycle', cinematic: true, recap: true, fullscreenOnStart: true, quips: 'often', quality: 'auto', voice: true, infoSide: 'left', hints: true, danger: false, entLabels: true, neon: true, life: true, miniature: false, diceSound: 'wood' };
 let lastSetup = null;
 // Detailgrad der Formen und Texturen: beim Start aus der gespeicherten Grafikqualität gelesen
 const SAVED_Q = (() => { try { return ((JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') || {}).settings || {}).quality || 'auto'; } catch (e) { return 'auto'; } })();
@@ -4121,6 +4159,7 @@ function layoutInsets() {
 function resize() {
   view.deedMinH = 0; if ($('deed')) $('deed').style.minHeight = '';
   const changed = phoneLayout();
+  if ((settings.infoSide !== 'right' && !document.body.classList.contains('phone')) !== document.body.classList.contains('info-left')) applyInfoSide(true);
   const st = $('stage');
   const W = st.clientWidth, H = st.clientHeight;
   renderer.setSize(W, H, false);
@@ -5082,6 +5121,8 @@ function renderTurn() {
   $('turn').style.setProperty('--pc', P.color);
   const human = localHuman(who);
   let html = `<div class="thead">${P.ai && PERSONAS[P.persona] ? `<span class="tav">${avatarSVG(P.persona, 26)}</span>` : '<span class="tdot"></span>'}<span class="tname">${esc(P.name)}</span><span class="tsub">${st.phase === 'over' ? 'gewinnt' : st.phase === 'auction' ? 'bietet' : P.out ? 'pleite' : P.ai ? esc(personaTag(P) || 'Computer') : 'am Zug'}</span></div>`;
+  const dbox = $('dangerbox');
+  if (dbox) { dbox.innerHTML = ''; dbox.hidden = true; }
   if (NET.pending && !view.busy) { $('turn-body').innerHTML = html + `<p class="prompt busyline">Wird an den Gastgeber geschickt …</p>`; return; }
   if (view.busy) { $('turn-body').innerHTML = html + `<p class="prompt busyline ${view.hurry ? 'fast' : ''}">Einen Moment …<small>${TOUCH ? 'Tippen' : 'Klick oder Leertaste'}: schneller</small></p>`; return; }
   html += `<p class="prompt">${esc(st.prompt)}</p>`;
@@ -5090,7 +5131,13 @@ function renderTurn() {
   if (st.phase === 'over') c = `<div class="btns"><button class="btn primary" data-ui="new" data-primary>Neues Spiel</button></div>`;
   else if (!human) c = P.ai ? `<div class="thinking">${esc(P.name)} überlegt …</div>` : netWaitHTML(who);
   else switch (st.phase) {
-    case 'roll': c = `<div class="btns"><button class="btn primary" data-act="roll" data-primary>Würfeln <kbd>Leertaste</kbd></button>${anytimeEntranceBtn(st)}${bankBtn(st)}${undoBtn()}</div>${dangerHTML(st)}`; break;
+    case 'roll': {
+      const dz = dangerHTML(st);
+      const side = dz && dbox && document.body.classList.contains('info-left');
+      if (side) { dbox.innerHTML = dz; dbox.hidden = false; }
+      c = `<div class="btns"><button class="btn primary" data-act="roll" data-primary>Würfeln <kbd>Leertaste</kbd></button>${anytimeEntranceBtn(st)}${bankBtn(st)}${undoBtn()}</div>${side ? '' : dz}`;
+      break;
+    }
     case 'nights': {
       const mult = stayMultiplier(st);
       const r = st.data.pension !== undefined ? PENSIONS[st.data.pension].rate * mult : nightRate(st, st.data.hotel) * mult;
@@ -5216,7 +5263,11 @@ function renderDeed() {
   if (view.pressing) { view.deedLater = true; return; }
   renderDeedNow();
   const d = $('deed');
-  if (d && d.offsetParent && !document.body.classList.contains('phone')) {
+  if (d && document.body.classList.contains('info-left') && d.classList.contains('deed-open') && d.offsetParent) {
+    const col = d.parentElement, cr = col.getBoundingClientRect(), r = d.getBoundingClientRect();
+    if (r.bottom > cr.bottom + 1) col.scrollTop += Math.min(r.bottom - cr.bottom, r.top - cr.top);
+  }
+  if (d && d.offsetParent && !document.body.classList.contains('phone') && !document.body.classList.contains('info-left')) {
     const h = d.offsetHeight;
     if (h > (view.deedMinH || 0)) { view.deedMinH = h; d.style.minHeight = h + 'px'; }
   }
@@ -5256,6 +5307,18 @@ function renderDeedNow() {
 }
 function renderLog() {
   if (!$('logov').hidden) renderLogOverlay(false);
+}
+// Hotelkarte und „Die nächsten 6 Felder“ links bei den Hoteliers oder rechts beim Zug (auf dem Handy immer im Zugfenster)
+function applyInfoSide(fromResize) {
+  const left = settings.infoSide !== 'right' && !document.body.classList.contains('phone');
+  document.body.classList.toggle('info-left', left);
+  const deed = $('deed'), L = document.querySelector('.col.left'), R = document.querySelector('.col.right');
+  if (!deed || !L || !R) return;
+  if (left) { if (deed.parentElement !== L) L.appendChild(deed); }
+  else if (deed.parentElement !== R) R.insertBefore(deed, R.querySelector('.logpanel'));
+  view.deedMinH = 0; deed.style.minHeight = '';
+  if (S) { renderTurn(); renderDeed(); }
+  if (!fromResize && typeof renderer !== 'undefined' && renderer) resize();   // linke Spalte ist dann breiter: Brett neu einpassen
 }
 function renderHUD() {
   renderPlayers(); renderTurn(); renderDeed(); renderLog(); syncTray();
@@ -5319,9 +5382,11 @@ async function applyAction(a) {
       await w(rollTray('move', S.dice.nights));
       syncTray();
       const col = prev.data.pension !== undefined ? PENSIONS[prev.data.pension].color : HOTELS[prev.data.hotel].color;
-      banner(`${S.dice.nights} ${S.dice.nights === 1 ? 'Nacht' : 'Nächte'}`, fmt(S.event?.amount || 0), col);
+      // bei Pleite steht im Ereignis, was tatsächlich gezahlt wurde
+      const ev = S.event || {}, bill = ev.kind === 'bankrupt' ? ev.owed : ev.amount || 0, got = ev.kind === 'bankrupt' ? ev.paid : bill;
+      banner(`${S.dice.nights} ${S.dice.nights === 1 ? 'Nacht' : 'Nächte'}`, got < bill ? `${fmt(bill)} · bezahlt nur ${fmt(got)}` : fmt(bill), col);
       sfx.pay();
-      await w(stayAnimation(prev, S.dice.nights, S.event?.amount || 0));
+      await w(stayAnimation(prev, S.dice.nights, got));
     } else if ((a.type === 'applyPermit' && S.phase !== 'permitRoll') || a.type === 'rollPermit') {
       await w(rollTray('build', S.dice.build));
       syncTray();
@@ -5356,7 +5421,13 @@ async function applyAction(a) {
     moneyPops(prev);
     if (prev.players.some((p, i) => p.cash < S.players[i].cash && i !== prev.cur)) sfx.coin();
     await w(syncScene(true, true));
-    if (S.event?.kind === 'bankrupt') { banner('Pleite!', S.players[S.event.player].name, '#ff6b6b'); sfx.deny(); placeCars(); }
+    if (S.event?.kind === 'bankrupt') {
+      const ev = S.event, short = ev.owed > ev.paid;
+      banner('Pleite!', short ? `${S.players[ev.player].name} zahlt nur ${fmt(ev.paid)} von ${fmt(ev.owed)}` : S.players[ev.player].name, '#ff6b6b');
+      // der Gläubiger soll sehen, warum weniger ankommt
+      if (short && ev.to !== null && ev.to !== undefined) toast(`${S.players[ev.to].name} bekommt nur ${fmt(ev.paid)} statt ${fmt(ev.owed)}: ${S.players[ev.player].name} ist pleite`);
+      sfx.deny(); placeCars();
+    }
     if (S.phase === 'auction' && S.auction.bank && !(prev.phase === 'auction' && prev.auction && prev.auction.bank)) {
       banner('Versteigerung!', `${HOTELS[S.auction.hotel].name} · ab ${fmt(S.auction.min)}`, HOTELS[S.auction.hotel].color);
       sfx.gavel();
@@ -5819,7 +5890,7 @@ function openRules(opt = {}) {
       <li><b>An die Bank</b>: Sie zahlt ${R.bankBuy === 'fifth' ? 'ein Fünftel' : 'ein Viertel'} des Gesamtwerts, mindestens den halben Grundpreis, und reißt alles ab.</li>
       <li><b>Versteigern</b>: Mindestgebot ist der halbe Grundpreis plus ${R.auctionAdd} % des Gesamtwerts. Der Käufer bekommt alles samt Gebäuden und Eingängen. Bietet niemand, zahlt die Bank den halben Grundpreis.</li>
       ${credit ? '<li>Lastet auf dem Verkauften ein Kredit, wird zuerst die offene Rechnung bezahlt. Den Rest verrechnet die Bank mit dem Kredit, bis du wieder im Rahmen bist.</li>' : ''}
-      <li>Ohne Grundstücke, Festgeld und Geld ist man pleite.</li></ul>`)}
+      <li>Ohne Grundstücke, Festgeld und Geld ist man pleite. Wer pleitegeht, gibt sein restliches Bargeld ab: Der Hotelbesitzer bekommt dann nur diesen Rest, der fehlende Betrag ist verloren. Das Protokoll sagt genau, wie viel.</li></ul>`)}
     ${sec('karten', 'Ereigniskarten', R.events === 'on' ? `<ul><li>16 Karten wie Messe, Lottogewinn, Sturm, Steuerprüfung, Gutschein vom Bürgermeister oder Abkürzung zum Start.${seasonIdx(st) >= 0 ? ' Mit Jahreszeiten kommen vier Saisonkarten dazu, die nur in ihrer Saison gezogen werden.' : ''}</li></ul>` : '<ul><li>In diesem Spiel ausgeschaltet.</li></ul>')}
     ${sec('gegner', 'Computergegner', `<ul><li>Acht Charaktere mit eigenem Stil: Bertram der Baulöwe, Clara die Buchhalterin, Dora die Grande Dame, Emil der Schnäppchenjäger, Frieda die Füchsin, Gustav der Glücksritter, Harald der Finanzhai und Ines die Maklerin.</li>
       <li>Dazu drei Stufen: Leicht, Normal, Schwer. Kein Computer kennt kommende Würfe.</li><li>Ihre Sprüche erscheinen als Sprechblasen über den Autos, einstellbar unter Darstellung & Ton.</li></ul>`)}
@@ -6282,6 +6353,8 @@ function openRuleEditor({ rules: start, mode, onApply, onCancel }) {
       return `<div class="ropt"><div class="ropt-h"><h5>Lautstärke</h5><p>Wird sofort beim Schieben übernommen.</p></div>${volumeSliders()}</div>
         <div class="ropt"><div class="ropt-h"><h5>Tageszeit</h5><p>Wechselt sie mit den Runden, vergeht alle fünf Runden ein Tag.</p></div>
           <div class="segx">${[['cycle', 'Wechselt'], ['day', 'Immer Tag'], ['evening', 'Abendsonne'], ['night', 'Immer Nacht']].map(([v, l]) => segBtn('daynight', v, l, look.daynight, v === 'cycle', 'lk')).join('')}</div></div>
+        <div class="ropt"><div class="ropt-h"><h5>Infokästen</h5><p>Die Hotelkarte und „Die nächsten 6 Felder“ stehen links unter den Hoteliers oder rechts beim Zugfenster. Auf dem Handy sind sie immer im Zugfenster.</p></div>
+          <div class="segx">${[['left', 'Links bei den Hoteliers'], ['right', 'Rechts beim Zug']].map(([v, l]) => segBtn('infoSide', v, l, look.infoSide || 'left', v === 'left', 'lk')).join('')}</div></div>
         <div class="ropt"><div class="ropt-h"><h5>Grafikqualität</h5><p>Niedriger schont Grafikkarte und Lüfter. Automatisch beginnt passend zum Bildschirm und schaltet zurück, wenn es ruckelt. Sehr hoch rechnet feiner als der Bildschirm und rundet Formen noch weiter ab; das braucht eine kräftige Grafikkarte. Maximal baut dazu echte Fensterrahmen, Simse, Läden und Gauben an die Hotels und pflanzt deutlich mehr Gras, Blumen und Bäume; gedacht für große Bildschirme und starke Grafikkarten. Wie rund die Formen sind und die Extras von Maximal gelten ab dem nächsten Start.${gfx.level ? ` Gerade aktiv: ${QUALITY[gfx.level].label}.` : ''}</p></div>
           <div class="segx">${[['auto', 'Automatisch'], ['max', 'Maximal'], ['ultra', 'Sehr hoch'], ['high', 'Hoch'], ['medium', 'Mittel'], ['low', 'Niedrig']].map(([v, l]) => segBtn('quality', v, l, look.quality || 'auto', v === 'auto', 'lk')).join('')}</div></div>
         <div class="ropt"><div class="ropt-h"><h5>Grafik-Extras</h5><p>Leben auf dem Brett: Wolkenschatten, Vögel, Spaziergänger, das Segelboot und nachts Glühwürmchen. Der Miniatur-Effekt lässt das Brett wie ein Modell wirken: Nur die Mitte ist scharf, Lichter leuchten weich. Er kostet etwas Leistung und ist deshalb anfangs aus.</p></div>
@@ -6348,6 +6421,7 @@ function openRuleEditor({ rules: start, mode, onApply, onCancel }) {
         applyVolumes();
         if (settings.quality !== qBefore) { gfx.auto = null; gfx.autoSteps = 0; applyQuality(); }
         applyLook();
+        applyInfoSide();
         syncToolButtons();
         save();
       }
@@ -9953,7 +10027,7 @@ function netPanel() {
     const endBtn = host ? 'Raum schließen' : guest ? 'Spiel verlassen' : '';
     const endWhat = host ? 'Alle Mitspieler werden getrennt, das Spiel läuft hier am PC weiter.' : 'Du verlässt das Online-Spiel und kommst zurück zu deinem eigenen Spiel.';
     const danger = endBtn ? (confirmEnd
-      ? `<div class="nend ask"><span>${esc(endWhat)}</span><button class="btn quiet" type="button" id="np-end-no">Nein</button><button class="btn danger" type="button" id="np-end-yes">${esc(endBtn)}</button></div>`
+      ? `<div class="nend ask"><span>${esc(endWhat)}</span><button class="btn quiet" type="button" id="np-end-no">Nein</button><button class="btn warnbtn" type="button" id="np-end-yes">${esc(endBtn)}</button></div>`
       : `<button class="btn quiet small nendbtn" type="button" id="np-end">${esc(endBtn)} …</button>`) : '';
     $('modal').innerHTML = `<div class="overlay"><div class="dialog netpanel" role="dialog" aria-modal="true" aria-labelledby="np-t">
       <div class="np-head"><h2 id="np-t">Online-Spiel</h2>${confirmEnd ? '' : danger}</div>
