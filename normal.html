@@ -708,8 +708,56 @@ body.phone #dangerbox { display: none; }
 body.info-left .col.left { width: 300px; }
 @media (max-width: 1180px) { body.info-left .col.left { width: 270px; } }
 body.info-left .col.left #deed .deed th { font-size: 10px; letter-spacing: .6px; }
-body.info-left .col.left #deed > p.hint { display: none; }
+body.info-left .col.left #deed.deed-open > p.hint { display: none; }
 body.info-left .col.left .panel#deed { padding: 12px 14px; }
+/* Links wird nicht gescrollt: Die Hotelkarte hat ihren festen Platz, und wenn es eng wird,
+   klappen die Spielerkarten Stufe für Stufe zusammen (fitLeft). Klick auf eine Karte zeigt alles. */
+body.info-left #deed:not(.deed-open) { display: block; }
+body.info-left .col.left:not(.dn-over) { overflow-y: hidden; }
+body.info-left.dn-over .col.left { overflow-y: auto; }
+.col.left.dn1 { gap: 9px; }
+.col.left.dn1 > .panel { padding: 10px 12px; }
+.col.left.dn1 .panel h3 { margin-bottom: 7px; }
+.col.left.dn1 .players { gap: 6px; }
+.col.left.dn1 .pcard { padding: 7px 10px 7px 14px; }
+.col.left.dn1 .pcard.hasav { padding-left: 46px; }
+.col.left.dn1 .pav { left: 11px; top: 8px; }
+.col.left.dn1 .pchips { margin-top: 5px; gap: 3px; }
+.col.left.dn1 .dangerpanel { padding: 8px 10px; }
+.col.left.dn2 .chip .cn { display: none; }
+.col.left.dn2 .chip { gap: 3px; padding: 1px 6px 1px 5px; font-size: 11px; }
+.col.left.dn2 .chip i { width: 10px; height: 10px; }
+.col.left.dn2 .chip .ec { margin-left: 1px; padding-left: 4px; }
+.col.left.dn3 .pcard:not(.cur) .pper { display: none; }
+.col.left.dn3 .pcard:not(.cur) .pworth { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
+.col.left.dn3 .pcard:not(.cur) .pdebt small { display: none; }
+.col.left.dn3 .pcard:not(.cur).hasav { padding-left: 40px; }
+.col.left.dn3 .pcard:not(.cur) .pav { left: 11px; top: 7px; width: 22px; height: 22px; }
+.col.left.dn3 .pcard:not(.cur) .pav svg, .col.left.dn3 .pcard:not(.cur) .pav .avatar { width: 22px; height: 22px; }
+.col.left.dn3 .pname { font-size: 14.5px; } .col.left.dn3 .pcash { font-size: 16px; }
+.col.left.dn4 .pcard:not(.cur) .chip { padding: 0; background: none; }
+.col.left.dn4 .pcard:not(.cur) .chip b, .col.left.dn4 .pcard:not(.cur) .chip .ec { display: none; }
+.col.left.dn4 .pcard:not(.cur) .pchips { margin-top: 4px; gap: 4px; }
+.col.left.dn5 .pcard:not(.cur) .pworth { display: none; }
+.col.left.dn5 .pcard.cur .pper { display: none; }
+.col.left.dn5 .pcard.cur .pworth { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
+.col.left.dn5 #deed .deed-top { margin-bottom: 3px; }
+.col.left.dn5 #deed .deed-name { font-size: 18px; }
+.col.left.dn5 #deed .deed-facts { font-size: 12px; gap: 1px 10px; margin-bottom: 4px; }
+.col.left.dn5 #deed .deed th, .col.left.dn5 #deed .deed td { padding: 2px 2px; }
+.col.left.dn5 .panel h3 { margin-bottom: 5px; }
+.col.left.dn5 .danger { font-size: 12px; padding: 6px 8px; }
+.col.left.dn7 .pcard .pper, .col.left.dn7 .pcard .pworth { display: none; }
+.col.left.dn7 > .panel:first-child h3 { display: none; }
+.col.left.dn7 #deed .deed-facts { font-size: 11.5px; }
+.col.left.dn6 .pcard .chip { padding: 0; background: none; }
+.col.left.dn6 .pcard .chip b, .col.left.dn6 .pcard .chip .ec { display: none; }
+.col.left.dn6 .pcard .pchips { margin-top: 3px; }
+.col.left.dn6 #deed table.deed { font-size: 11.5px; }
+.col.left.dn6 .danger .dgf { display: none; }
+/* zusammengeklappte Karte beim Überfahren vollständig daneben zeigen */
+.pfloat { position: fixed; z-index: 40; width: 280px; pointer-events: none; filter: drop-shadow(0 10px 24px rgba(0,0,0,.55)); }
+.pfloat .pcard { background: #2b241b; border-color: color-mix(in srgb, var(--pc) 55%, transparent); }
 </style>
 
 <div class="loading" id="loading"><div>Hotelkönige<small>Das Brett wird aufgebaut …</small><div class="lhint">Bleibt es hier stehen? Dann zeigt gerade eine Vorschau die Datei an, zum Beispiel in Google Drive, der Dateien-App oder einer Mail. Eine Vorschau kann das Spiel nicht starten.<br><br>Am PC oder Mac: Datei herunterladen und mit einem Browser öffnen (Chrome, Edge, Firefox oder Safari).<br>Auf iPhone und iPad klappt es nur über einen Weblink zum Spiel.</div></div></div>
@@ -4157,7 +4205,7 @@ function layoutInsets() {
   return { L: l.right + 8, R: window.innerWidth - r.left + 8, T: 0, B: 0 };
 }
 function resize() {
-  view.deedMinH = 0; if ($('deed')) $('deed').style.minHeight = '';
+  view.deedMinH = 0; if ($('deed') && !document.body.classList.contains('info-left')) $('deed').style.minHeight = '';
   const changed = phoneLayout();
   if ((settings.infoSide !== 'right' && !document.body.classList.contains('phone')) !== document.body.classList.contains('info-left')) applyInfoSide(true);
   const st = $('stage');
@@ -4180,6 +4228,7 @@ function resize() {
   view.layoutKey = key;
   if (!camState.userZoomed) camState.des.r = camState.fitR;
   if (tray.renderer) resizeTray();
+  if (S && (view.fitW !== window.innerWidth || view.fitH !== window.innerHeight)) { view.fitW = window.innerWidth; view.fitH = window.innerHeight; fitLeft(true); }
 }
 function camPreset(kind) {
   camState.userZoomed = false;
@@ -5046,6 +5095,7 @@ function renderPlayers() {
   const st = S;
   $('round').innerHTML = `Runde ${st.round}${st.roundLimit ? ' von ' + st.roundLimit : ''} · ${clockText()}${seasonChip(st)}`;
   fitTopbar();
+  pfloatHide();
   $('players').innerHTML = st.players.map((p, i) => {
     const own = ownedHotels(st, i);
     const av = p.ai ? avatarSVG(p.persona, 30) : '';
@@ -5067,6 +5117,7 @@ function renderPlayers() {
       if (el) el.textContent = fmt(cashShown[i]);
     }, easeOut).then(() => { cashShown[i] = to; const el = document.querySelector(`[data-cash="${i}"]`); if (el) el.textContent = fmt(to); });
   });
+  fitLeft();
 }
 function fieldLabel(i, h) {
   const sp = SPACES[i];
@@ -5134,7 +5185,7 @@ function renderTurn() {
     case 'roll': {
       const dz = dangerHTML(st);
       const side = dz && dbox && document.body.classList.contains('info-left');
-      if (side) { dbox.innerHTML = dz; dbox.hidden = false; }
+      if (side) { dbox.innerHTML = dz; dbox.hidden = false; fitLeft(); }
       c = `<div class="btns"><button class="btn primary" data-act="roll" data-primary>Würfeln <kbd>Leertaste</kbd></button>${anytimeEntranceBtn(st)}${bankBtn(st)}${undoBtn()}</div>${side ? '' : dz}`;
       break;
     }
@@ -5263,13 +5314,17 @@ function renderDeed() {
   if (view.pressing) { view.deedLater = true; return; }
   renderDeedNow();
   const d = $('deed');
-  if (d && document.body.classList.contains('info-left') && d.classList.contains('deed-open') && d.offsetParent) {
+  if (d && document.body.classList.contains('info-left') && d.classList.contains('deed-open') && d.offsetParent && document.body.classList.contains('dn-over')) {
     const col = d.parentElement, cr = col.getBoundingClientRect(), r = d.getBoundingClientRect();
     if (r.bottom > cr.bottom + 1) col.scrollTop += Math.min(r.bottom - cr.bottom, r.top - cr.top);
   }
   if (d && d.offsetParent && !document.body.classList.contains('phone') && !document.body.classList.contains('info-left')) {
     const h = d.offsetHeight;
     if (h > (view.deedMinH || 0)) { view.deedMinH = h; d.style.minHeight = h + 'px'; }
+  }
+  if (d && d.offsetParent && document.body.classList.contains('info-left') && d.offsetHeight > (parseFloat(d.style.minHeight) || 0) + 1) {
+    d.style.minHeight = d.offsetHeight + 'px';
+    fitLeft();
   }
 }
 function renderDeedNow() {
@@ -5317,8 +5372,57 @@ function applyInfoSide(fromResize) {
   if (left) { if (deed.parentElement !== L) L.appendChild(deed); }
   else if (deed.parentElement !== R) R.insertBefore(deed, R.querySelector('.logpanel'));
   view.deedMinH = 0; deed.style.minHeight = '';
-  if (S) { renderTurn(); renderDeed(); }
+  if (S) { renderTurn(); renderDeed(); fitLeft(true); }
   if (!fromResize && typeof renderer !== 'undefined' && renderer) resize();   // linke Spalte ist dann breiter: Brett neu einpassen
+}
+// Linke Spalte ohne Scrollbalken: Spielerkarten klappen stufenweise zusammen, bis Hoteliers, Vorschau und Hotelkarte passen.
+// Die Stufe steigt im Lauf der Partie nur an (sonst würden die Karten bei jedem Zug auf- und zuklappen);
+// neu berechnet wird sie bei neuer Fenstergröße, neuer Partie oder umgestellten Infokästen.
+const DENS = ['dn1', 'dn2', 'dn3', 'dn4', 'dn5', 'dn6', 'dn7'];
+function fitLeft(reset) {
+  const col = document.querySelector('.col.left');
+  if (!col) return;
+  if (document.body.classList.contains('phone')) { DENS.forEach(c => col.classList.remove(c)); view.dens = 0; return; }
+  if (reset) view.dens = 0;
+  // jede Stufe macht auch die Hotelkarte etwas kleiner: ihren festen Platz dann neu ausmessen
+  const set = k => { DENS.forEach((c, j) => col.classList.toggle(c, j < k)); reserveDeed(); };
+  let k = view.dens || 0;
+  if (reset) set(k); else DENS.forEach((c, j) => col.classList.toggle(c, j < k));
+  while (k < DENS.length && col.scrollHeight > col.clientHeight + 1) set(++k);
+  view.dens = k;
+  // reicht auch die dichteste Stufe nicht (sehr kleines Fenster), darf die Spalte doch scrollen
+  document.body.classList.toggle('dn-over', col.scrollHeight > col.clientHeight + 1);
+}
+// Zusammengeklappte Spielerkarte: beim Überfahren daneben in voller Größe zeigen
+function pfloatHide() { const f = document.querySelector('.pfloat'); if (f) f.remove(); }
+document.addEventListener('mouseout', e => { if (!e.relatedTarget) pfloatHide(); });
+document.addEventListener('mouseover', e => {
+  const pc = e.target.closest && e.target.closest('#players .pcard');
+  if (!pc) { if (!e.target.closest || !e.target.closest('.pfloat')) pfloatHide(); return; }
+  const col = document.querySelector('.col.left');
+  const folded = view.dens >= 5 || (view.dens >= 3 && !pc.classList.contains('cur'));
+  if (!col || !folded || TOUCH) return pfloatHide();
+  let f = document.querySelector('.pfloat');
+  if (f && f.dataset.pi === pc.dataset.pi) return;
+  if (!f) { f = document.createElement('div'); f.className = 'pfloat'; document.body.appendChild(f); }
+  f.dataset.pi = pc.dataset.pi;
+  f.innerHTML = pc.outerHTML;
+  const r = pc.getBoundingClientRect();
+  f.style.left = Math.round(r.right + 10) + 'px';
+  f.style.top = Math.round(Math.max(8, Math.min(r.top, window.innerHeight - f.offsetHeight - 8))) + 'px';
+});
+// Die Hotelkarte links bekommt immer den Platz der größten Karte: so springt beim Überfahren der Grundstücke nichts
+function reserveDeed() {
+  const d = $('deed');
+  if (!d || !S || !document.body.classList.contains('info-left')) return;
+  d.style.minHeight = '';
+  const keep = { sel: view.sel, hover: view.hover, ph: view.previewHotel };
+  let max = 0;
+  view.hover = null; view.previewHotel = null;
+  for (let h = 0; h < HOTELS.length; h++) { view.sel = h; renderDeedNow(); max = Math.max(max, d.offsetHeight); }
+  view.sel = keep.sel; view.hover = keep.hover; view.previewHotel = keep.ph;
+  renderDeedNow();
+  d.style.minHeight = max + 'px';
 }
 function renderHUD() {
   renderPlayers(); renderTurn(); renderDeed(); renderLog(); syncTray();
@@ -5820,6 +5924,7 @@ function restore() {
   netAfterRestore();
   save();
   renderHUD();
+  fitLeft(true);
   schedule();
   netUi();
 }
@@ -7029,7 +7134,7 @@ function entCapacity(st, h) {
 function hotelChip(st, h) {
   const hs = st.hotels[h];
   const ents = hs.ents.length;
-  return `<span class="chip" title="${esc(HOTELS[h].name)}: ${hs.stage ? stageName(h, hs.stage) : 'unbebaut'}, ${ents} ${ents === 1 ? 'Eingang' : 'Eingänge'}"><i style="background:${HOTELS[h].color}"></i>${esc(HOTELS[h].name)}${hs.stage ? ` <b>${'★'.repeat(hs.stage)}</b>` : ''}${hs.stage ? `<span class="ec ${ents ? '' : 'none'}">${DOOR_SVG}${ents}</span>` : ''}</span>`;
+  return `<span class="chip" title="${esc(HOTELS[h].name)}: ${hs.stage ? stageName(h, hs.stage) : 'unbebaut'}, ${ents} ${ents === 1 ? 'Eingang' : 'Eingänge'}"><i style="background:${HOTELS[h].color}"></i><span class="cn">${esc(HOTELS[h].name)}</span>${hs.stage ? ` <b>${'★'.repeat(hs.stage)}</b>` : ''}${hs.stage ? `<span class="ec ${ents ? '' : 'none'}">${DOOR_SVG}${ents}</span>` : ''}</span>`;
 }
 
 // ---------------- Übersicht „Meine Hotels“ ----------------
