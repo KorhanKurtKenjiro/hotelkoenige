@@ -708,13 +708,11 @@ body.phone #dangerbox { display: none; }
 body.info-left .col.left { width: 300px; }
 @media (max-width: 1180px) { body.info-left .col.left { width: 270px; } }
 body.info-left .col.left #deed .deed th { font-size: 10px; letter-spacing: .6px; }
-body.info-left .col.left #deed.deed-open > p.hint { display: none; }
+body.info-left .col.left #deed.deed-open:not(.deed-pension) > p.hint { display: none; }
 body.info-left .col.left .panel#deed { padding: 12px 14px; }
 /* Links wird nicht gescrollt: Die Hotelkarte hat ihren festen Platz, und wenn es eng wird,
    klappen die Spielerkarten Stufe für Stufe zusammen (fitLeft). Klick auf eine Karte zeigt alles. */
 body.info-left #deed:not(.deed-open) { display: block; }
-body.info-left .col.left:not(.dn-over) { overflow-y: hidden; }
-body.info-left.dn-over .col.left { overflow-y: auto; }
 .col.left.dn1 { gap: 9px; }
 .col.left.dn1 > .panel { padding: 10px 12px; }
 .col.left.dn1 .panel h3 { margin-bottom: 7px; }
@@ -728,7 +726,7 @@ body.info-left.dn-over .col.left { overflow-y: auto; }
 .col.left.dn2 .chip { gap: 3px; padding: 1px 6px 1px 5px; font-size: 11px; }
 .col.left.dn2 .chip i { width: 10px; height: 10px; }
 .col.left.dn2 .chip .ec { margin-left: 1px; padding-left: 4px; }
-.col.left.dn3 .pcard:not(.cur) .pper { display: none; }
+.col.left.dn3 .pcard:not(.cur) .pper:not(.bad) { display: none; }   /* „getrennt“ im Online-Spiel bleibt immer sichtbar */
 .col.left.dn3 .pcard:not(.cur) .pworth { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
 .col.left.dn3 .pcard:not(.cur) .pdebt small { display: none; }
 .col.left.dn3 .pcard:not(.cur).hasav { padding-left: 40px; }
@@ -739,7 +737,7 @@ body.info-left.dn-over .col.left { overflow-y: auto; }
 .col.left.dn4 .pcard:not(.cur) .chip b, .col.left.dn4 .pcard:not(.cur) .chip .ec { display: none; }
 .col.left.dn4 .pcard:not(.cur) .pchips { margin-top: 4px; gap: 4px; }
 .col.left.dn5 .pcard:not(.cur) .pworth { display: none; }
-.col.left.dn5 .pcard.cur .pper { display: none; }
+.col.left.dn5 .pcard.cur .pper:not(.bad) { display: none; }
 .col.left.dn5 .pcard.cur .pworth { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
 .col.left.dn5 #deed .deed-top { margin-bottom: 3px; }
 .col.left.dn5 #deed .deed-name { font-size: 18px; }
@@ -747,8 +745,12 @@ body.info-left.dn-over .col.left { overflow-y: auto; }
 .col.left.dn5 #deed .deed th, .col.left.dn5 #deed .deed td { padding: 2px 2px; }
 .col.left.dn5 .panel h3 { margin-bottom: 5px; }
 .col.left.dn5 .danger { font-size: 12px; padding: 6px 8px; }
-.col.left.dn7 .pcard .pper, .col.left.dn7 .pcard .pworth { display: none; }
+.col.left.dn7 .pcard .pper:not(.bad), .col.left.dn7 .pcard .pworth { display: none; }
 .col.left.dn7 > .panel:first-child h3 { display: none; }
+.col.left.dn7 { gap: 6px; }
+.col.left.dn7 > .panel { padding: 7px 10px; }
+.col.left.dn7 .players { gap: 4px; }
+.col.left.dn7 .pcard { padding-top: 5px; padding-bottom: 5px; }
 .col.left.dn7 #deed .deed-facts { font-size: 11.5px; }
 .col.left.dn6 .pcard .chip { padding: 0; background: none; }
 .col.left.dn6 .pcard .chip b, .col.left.dn6 .pcard .chip .ec { display: none; }
@@ -5095,7 +5097,7 @@ function renderPlayers() {
   const st = S;
   $('round').innerHTML = `Runde ${st.round}${st.roundLimit ? ' von ' + st.roundLimit : ''} · ${clockText()}${seasonChip(st)}`;
   fitTopbar();
-  pfloatHide();
+  const fpi = document.querySelector('.pfloat')?.dataset.pi;
   $('players').innerHTML = st.players.map((p, i) => {
     const own = ownedHotels(st, i);
     const av = p.ai ? avatarSVG(p.persona, 30) : '';
@@ -5118,6 +5120,10 @@ function renderPlayers() {
     }, easeOut).then(() => { cashShown[i] = to; const el = document.querySelector(`[data-cash="${i}"]`); if (el) el.textContent = fmt(to); });
   });
   fitLeft();
+  if (fpi !== undefined) {
+    const el = view.mxy && document.elementFromPoint(view.mxy[0], view.mxy[1]), pc = el && el.closest('#players .pcard');
+    if (pc) pfloatShow(pc); else pfloatHide();
+  }
 }
 function fieldLabel(i, h) {
   const sp = SPACES[i];
@@ -5330,7 +5336,9 @@ function renderDeed() {
 function renderDeedNow() {
   const st = S;
   const pk = view.hover && view.hover.pension !== undefined ? view.hover.pension : st.phase === 'nights' && st.data.pension !== undefined && view.sel === null ? st.data.pension : null;
+  $('deed').classList.toggle('deed-pension', pk !== null);
   if (pk !== null) {
+    $('deed').classList.add('deed-open');   // Pensionskarte immer zeigen (auch bei wenig Höhe), ihr Hinweis ist der eigentliche Inhalt
     const P = PENSIONS[pk], m = stayMultiplier(st);
     $('deed').innerHTML = `<h3>Pension</h3><div class="deed-top"><span class="deed-name" style="color:${P.color}">${esc(P.name)}</span><span class="deed-own">gehört der Bank</span></div>
       <div class="deed-facts"><span>pro Nacht <b class="num">${fmt(P.rate * m)}</b></span><span>höchstens <b class="num">${fmt(P.rate * 6 * m)}</b></span><span>Eingänge <b class="num">${P.ents.length}</b></span></div>
@@ -5348,13 +5356,16 @@ function renderDeedNow() {
     $('deed').innerHTML = `<h3>Hotelkarte</h3><p class="hint" style="margin:0">${TOUCH ? 'Tippe auf ein Grundstück, um Baukosten und Übernachtungspreise zu sehen.' : 'Fahre mit der Maus über ein Grundstück, um Baukosten und Übernachtungspreise zu sehen. Ein Klick hält die Karte fest.'}</p>`;
     return;
   }
+  $('deed').innerHTML = deedHotelHTML(st, h, view.sel === h);
+}
+function deedHotelHTML(st, h, pinned) {
   const H = HOTELS[h], hs = st.hotels[h];
   let rows = '';
   for (let s = 1; s <= maxStage(h); s++) {
     const cls = hs.owner !== null && hs.stage === s ? 'now' : hs.owner !== null && s < hs.stage ? 'done' : 'todo';
     rows += `<tr class="${cls}"><td>${esc(stageName(h, s))}</td><td>${fmt(stageCost(h, s))}</td><td>${fmt(nightRate(st, h, s))}</td><td>${fmt(nightRate(st, h, s) * 6)}</td></tr>`;
   }
-  $('deed').innerHTML = `<h3>Hotelkarte${view.sel === h ? ' · festgehalten' : ''}</h3>
+  return `<h3>Hotelkarte${pinned ? ' · festgehalten' : ''}</h3>
     <div class="deed-top"><span class="deed-name" style="color:${H.color}">${esc(H.name)}</span><span class="deed-own">${hs.owner !== null ? `<i class="sw" style="background:${st.players[hs.owner].color}"></i>${esc(pname(st, hs.owner))}` : 'zu verkaufen'}</span></div>
     <div class="deed-facts"><span>Grund <b class="num">${fmt(H.land)}</b></span><span>Eingang <b class="num">${fmt(H.ent)}</b></span><span>Eingänge <b class="num">${hs.ents.length}</b>${hs.owner !== null ? ` von ${entCapacity(st, h)}` : ''}</span>${hs.owner !== null && hs.stage && hs.ents.length ? `<span>Ø pro Umlauf <b class="num">${roundFmt(perLap(st, h, hs.stage, hs.ents.length))}</b></span>` : ''}${hs.earned ? `<span>Eingenommen <b class="num">${fmt(hs.earned)}</b></span>` : ''}${seasonIdx(st) >= 0 ? seasonNote(st, h) : ''}${hs.owner === null && rulesOf(st).landAuction !== 'off' ? `<span>Gelegenheiten <b class="num">${(hs.chances || []).filter(i => !st.players[i].out).length} von ${st.players.filter(p => !p.out).length}</b></span>` : ''}</div>
     <table class="deed"><thead><tr><th>Bauabschnitt</th><th>Kosten</th><th>Nacht</th><th>6 Nächte</th></tr></thead><tbody>${rows}</tbody></table>
@@ -5382,39 +5393,57 @@ const DENS = ['dn1', 'dn2', 'dn3', 'dn4', 'dn5', 'dn6', 'dn7'];
 function fitLeft(reset) {
   const col = document.querySelector('.col.left');
   if (!col) return;
-  if (document.body.classList.contains('phone')) { DENS.forEach(c => col.classList.remove(c)); view.dens = 0; return; }
+  if (document.body.classList.contains('phone')) { DENS.forEach(c => col.classList.remove(c)); view.dens = 0; document.body.classList.remove('dn-over'); return; }
+  // Spalte gerade nicht sichtbar (nichts messbar): beim nächsten Mal ganz neu einpassen
+  if (!col.offsetParent || col.clientHeight < 50) { view.fitDirty = true; return; }
+  if (view.fitDirty) { reset = true; view.fitDirty = false; }
   if (reset) view.dens = 0;
   // jede Stufe macht auch die Hotelkarte etwas kleiner: ihren festen Platz dann neu ausmessen
   const set = k => { DENS.forEach((c, j) => col.classList.toggle(c, j < k)); reserveDeed(); };
   let k = view.dens || 0;
   if (reset) set(k); else DENS.forEach((c, j) => col.classList.toggle(c, j < k));
-  while (k < DENS.length && col.scrollHeight > col.clientHeight + 1) set(++k);
+  while (k < DENS.length && col.scrollHeight > col.clientHeight) set(++k);
   view.dens = k;
   // reicht auch die dichteste Stufe nicht (sehr kleines Fenster), darf die Spalte doch scrollen
-  document.body.classList.toggle('dn-over', col.scrollHeight > col.clientHeight + 1);
+  document.body.classList.toggle('dn-over', col.scrollHeight > col.clientHeight);
 }
+function fitLeftSoon() {
+  if (view.fitRaf) return;
+  view.fitRaf = requestAnimationFrame(() => { view.fitRaf = 0; if (S) fitLeft(); });
+}
+if (typeof ResizeObserver !== 'undefined') {
+  const ro = new ResizeObserver(fitLeftSoon);
+  const watch = () => { const L = document.querySelector('.col.left'); if (L) [...L.children].forEach(c => ro.observe(c)); else setTimeout(watch, 200); };
+  watch();
+}
+// spät geladene Schriften ändern die Höhen: Hotelkarte neu ausmessen und nachprüfen (ohne die Karten wieder aufzuklappen)
+if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { if (S) { reserveDeed(); fitLeft(); } });
 // Zusammengeklappte Spielerkarte: beim Überfahren daneben in voller Größe zeigen
 function pfloatHide() { const f = document.querySelector('.pfloat'); if (f) f.remove(); }
-document.addEventListener('mouseout', e => { if (!e.relatedTarget) pfloatHide(); });
-document.addEventListener('mouseover', e => {
-  const pc = e.target.closest && e.target.closest('#players .pcard');
-  if (!pc) { if (!e.target.closest || !e.target.closest('.pfloat')) pfloatHide(); return; }
-  const col = document.querySelector('.col.left');
+function pfloatShow(pc) {
   const folded = view.dens >= 5 || (view.dens >= 3 && !pc.classList.contains('cur'));
-  if (!col || !folded || TOUCH) return pfloatHide();
+  if (!folded || TOUCH) return pfloatHide();
   let f = document.querySelector('.pfloat');
-  if (f && f.dataset.pi === pc.dataset.pi) return;
   if (!f) { f = document.createElement('div'); f.className = 'pfloat'; document.body.appendChild(f); }
   f.dataset.pi = pc.dataset.pi;
-  f.innerHTML = pc.outerHTML;
+  f.innerHTML = pc.outerHTML.replace(/ data-cash="\d+"/, '');
   const r = pc.getBoundingClientRect();
   f.style.left = Math.round(r.right + 10) + 'px';
   f.style.top = Math.round(Math.max(8, Math.min(r.top, window.innerHeight - f.offsetHeight - 8))) + 'px';
+}
+document.addEventListener('mouseout', e => { if (!e.relatedTarget) { pfloatHide(); view.mxy = null; } });
+document.addEventListener('mousemove', e => { view.mxy = [e.clientX, e.clientY]; }, { passive: true });
+document.addEventListener('mouseover', e => {
+  const pc = e.target.closest && e.target.closest('#players .pcard');
+  if (!pc) { if (!e.target.closest || !e.target.closest('.pfloat')) pfloatHide(); return; }
+  const f = document.querySelector('.pfloat');
+  if (f && f.dataset.pi === pc.dataset.pi) return;
+  pfloatShow(pc);
 });
 // Die Hotelkarte links bekommt immer den Platz der größten Karte: so springt beim Überfahren der Grundstücke nichts
 function reserveDeed() {
   const d = $('deed');
-  if (!d || !S || !document.body.classList.contains('info-left')) return;
+  if (!d || !S || !document.body.classList.contains('info-left') || !d.offsetParent) return;
   d.style.minHeight = '';
   const keep = { sel: view.sel, hover: view.hover, ph: view.previewHotel };
   let max = 0;
@@ -5426,6 +5455,10 @@ function reserveDeed() {
 }
 function renderHUD() {
   renderPlayers(); renderTurn(); renderDeed(); renderLog(); syncTray();
+  if (document.body.classList.contains('info-left')) {
+    const sig = HOTELS.map((_, h) => deedHotelHTML(S, h, false)).join('');
+    if (sig !== view.deedSig) { view.deedSig = sig; reserveDeed(); fitLeft(); }
+  }
   refreshLabelText();
   updateHighlights();
   if (S.phase === 'over') showGameOver();
