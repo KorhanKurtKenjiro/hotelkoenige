@@ -8952,8 +8952,8 @@ function buildPlot(h) {
     x: cx + (fx[0] !== 0 ? fx[0] * (w / 2 - 0.16) : -(w / 2 - 0.16)),
     z: cz + (fx[1] !== 0 ? fx[1] * (d / 2 - 0.16) : -(d / 2 - 0.16)),
   };
-  const pole = mesh(new T.CylinderGeometry(0.014, 0.014, 0.95, 8), mat('#e9e4da', { metalness: 0.4, roughness: 0.3 }));
-  pole.position.set(corner.x, 0.5, corner.z);
+  const pole = REMAKE ? RM.flagPole() : mesh(new T.CylinderGeometry(0.014, 0.014, 0.95, 8), mat('#e9e4da', { metalness: 0.4, roughness: 0.3 }));
+  pole.position.set(corner.x, REMAKE ? 0.02 : 0.5, corner.z);
   pole.visible = false;
   grp.add(pole);
   const flagM = new T.MeshStandardMaterial({ color: '#ffffff', side: T.DoubleSide, roughness: 0.65 });
@@ -8969,7 +8969,8 @@ function buildPlot(h) {
   const wood = mat('#6e4b2c');
   const brd = mesh(new T.BoxGeometry(0.62, 0.31, 0.03), [wood, wood, wood, wood, sm, sm]);
   brd.position.y = 0.4;
-  sign.add(brd, box(0.025, 0.3, 0.025, wood, -0.24, 0.15, 0), box(0.025, 0.3, 0.025, wood, 0.24, 0.15, 0));
+  if (REMAKE) sign.add(RM.saleSign(sm));
+  else sign.add(brd, box(0.025, 0.3, 0.025, wood, -0.24, 0.15, 0), box(0.025, 0.3, 0.025, wood, 0.24, 0.15, 0));
   const sp = { x: cx + fx[0] * (w / 2 - 0.12), z: cz + fx[1] * (d / 2 - 0.12) };
   // Schild nicht auf einen Bauplatz stellen: an die Längsseite rücken
   if (fx[0] !== 0) sp.z = cz + (d / 2 - 0.5);
@@ -9815,6 +9816,7 @@ const FACE_NORMALS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [
 const FACE_UP = [[0, 1, 0], [0, 1, 0], [0, 0, -1], [0, 0, 1], [0, 1, 0], [0, 1, 0]];
 function makeDie(kind) {
   const faces = kind === 'pips' ? PIP_FACES : BUILD_FACES;
+  if (REMAKE) { const d = RM.die(kind, faces); d.userData.faces = faces; return d; }
   const mats = faces.map(v => new T.MeshStandardMaterial({ map: faceTex(kind, v), roughness: 0.35 }));
   const m = new T.Mesh(new T.BoxGeometry(1, 1, 1), mats);
   m.castShadow = true;
@@ -9855,6 +9857,7 @@ function initTray() {
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   tray.scene.add(ground);
+  if (REMAKE) { ground.visible = false; tray.scene.add(RM.diceTray(tray.renderer, tray.scene)); }
   tray.move = makeDie('pips');
   tray.build = makeDie('build');
   tray.move.position.set(-0.9, 0.5, 0.2);
@@ -11908,10 +11911,12 @@ function railing(K, mat, len, h, x, y, z, ry = 0, step = 0.035, glass = false) {
 // Laub-Klumpen wie Modellbau-Schaumstoff: verbeulte Kugel, nach unten dunkler
 const BLOB_CACHE = {};
 function foamBlob(r, seed, col) {
-  const key = (seed % 12) + ':' + FINE;
+  // kleine Klumpen (Büsche, Hecken, Topfpflanzen) gröber, sie sind nie groß im Bild
+  const det = r < 0.085 ? 1 : FINE ? 2 : 1;
+  const key = (seed % 12) + ':' + det;
   let base = BLOB_CACHE[key];
   if (!base) {
-    let g = new T.IcosahedronGeometry(1, FINE ? 2 : 1); g.deleteAttribute('normal'); g.deleteAttribute('uv'); g = T.mergeVertices(g);
+    let g = new T.IcosahedronGeometry(1, det); g.deleteAttribute('normal'); g.deleteAttribute('uv'); g = T.mergeVertices(g);
     const p = g.attributes.position, rn = rng(seed % 12 + 1);
     const ph = [rn() * 6, rn() * 6, rn() * 6];
     const shadeA = [];
@@ -11937,7 +11942,7 @@ function flowers(K, x, z, w, d, n, seed, cols = FLOWER_COLS, y = 0.02) {
   for (let i = 0; i < n; i++) {
     const k = 'fl' + cols[i % cols.length];
     if (!MAT[k]) MAT[k] = std(cols[i % cols.length], { roughness: 0.6 });
-    K.sphere(MAT[k], 0.012 + rn() * 0.006, x + (rn() - 0.5) * w, y, z + (rn() - 0.5) * d, 6, 4);
+    K.sphere(MAT[k], 0.012 + rn() * 0.006, x + (rn() - 0.5) * w, y, z + (rn() - 0.5) * d, 5, 3);
   }
 }
 
@@ -12508,7 +12513,7 @@ function palais(Q, o) {
   for (const sx of [-1, 1]) balustrade(Q, MAT.cream, pd - 0.02, 0.085, sx * (pw / 2 + 0.04), ph + 0.045, pd / 2, Math.PI / 2);
   for (let i = 0; i < 3; i++) Q.box(MAT.stone, pw * 0.8 - i * 0.06, 0.026, 0.1, 0, 0.013 + i * 0.026, pd + 0.1 - i * 0.05);
   Q.pop();
-  return { sign: signAt(ph - 0.075, D / 2 + pd + 0.035, Math.min(0.8, pw * 0.9), 0.09) };
+  return { sign: signAt(ph + 0.16, D / 2 + pd + 0.01, Math.min(1.15, pw + 0.12), 0.15) };
 }
 
 // ---------------- Alpenglühen (Chalet, Giebel zur Straße) ----------------
@@ -12578,7 +12583,7 @@ function chalet(Q, o) {
     Q.box(MAT.rubble, 0.13, 0.32, 0.13, cx, cy, cz); Q.box(MAT.stone, 0.17, 0.03, 0.17, cx, cy + 0.17, cz); Q.box(MAT.snow, 0.16, 0.03, 0.16, cx, cy + 0.195, cz, 0, { round: 0.012 });
     smoke = new T.Vector3(cx, cy + 0.24, cz);
   }
-  return { sign: main ? signAt(F[nf] + 0.15 + 0.005, D / 2 + 0.2, Math.min(0.7, W * 0.8), 0.085) : null, smoke };
+  return { sign: main ? signAt(F[nf] + 0.14, D / 2 + 0.205, Math.min(0.9, W + 0.04), 0.13) : null, smoke };
 }
 
 // ---------------- Kasbah ----------------
@@ -12650,7 +12655,7 @@ function kasbah(Q, o) {
     }
     Q.pop();
   }
-  return { sign: signAt(Hw - 0.12, D / 2 + 0.03, Math.min(0.62, W - 2 * TW - 0.3), 0.09) };
+  return { sign: signAt(Hw + 0.07, D / 2 + 0.03, Math.min(1.1, W - 2 * TW - 0.16), 0.16) };
 }
 
 // ---------------- Bauteil zusammensetzen ----------------
@@ -12777,7 +12782,7 @@ function riviera(Q, o) {
     Q.cyl(MAT.white, 0.006, 0.008, 0.4, W * 0.25, Hw + R * 0.5 + 0.2, -D * 0.1, 6);
     const flag = MAT.flagY || (MAT.flagY = std('#f2b134', { roughness: 0.6, side: T.DoubleSide }));
     Q.box(flag, 0.003, 0.08, 0.14, W * 0.25, Hw + R * 0.5 + 0.36, -D * 0.1 + 0.07);
-    sign = signAt(gh + 0.05, D / 2 + 0.03, Math.min(0.62, W * 0.62), 0.08);
+    sign = signAt(Hw + 0.085, D / 2 + 0.07, Math.min(0.9, W * 0.78), 0.14);
   }
   return { sign };
 }
@@ -12853,7 +12858,7 @@ function ryokan(Q, o) {
   if (main) {
     const lan = MAT.lanternStone || (MAT.lanternStone = std('#a9a49a', { roughness: 0.9 }));
     for (const sx of [-1, 1]) { Q.push(sx * (W / 2 - 0.05), 0, D / 2 + 0.16); Q.box(lan, 0.05, 0.02, 0.05, 0, 0.06, 0); Q.cyl(lan, 0.012, 0.016, 0.07, 0, 0.1, 0, 6); Q.box(lan, 0.05, 0.04, 0.05, 0, 0.155, 0); Q.box(MAT.paper, 0.034, 0.028, 0.052, 0, 0.155, 0); Q.add(lan, hipGeo(0.08, 0.08, 0.04, 0.035), new T.Matrix4().makeTranslation(0, 0.175, 0)); Q.pop(); }
-    sign = signAt(0.05 + th + th * 0.32, D * 0.85 / 2 + 0.03, Math.min(0.62, W * 0.85 * 0.8), 0.085);
+    sign = signAt(0.05 + th + th * 0.3, D * 0.85 / 2 + 0.03, Math.min(0.85, W * 0.85 * 0.88), 0.13);
   }
   return { sign };
 }
@@ -12911,7 +12916,7 @@ function pueblo(Q, o) {
     Q.box(MAT.wood, 0.012, 0.09, 0.012, 0, 0.3, 0.0); Q.box(MAT.wood, 0.05, 0.012, 0.012, 0, 0.32, 0);
     Q.pop();
     Q.sphere(MAT.adobe, 0.08, W * 0.3, 2 * lh + 0.01, -(D - D * 0.73) / 2 + D * 0.73 / 2 - 0.12, FINE ? 12 : 8, 6, { half: true, sy: 0.9 });
-    sign = signAt(lh - 0.08, D / 2 + 0.02, Math.min(0.6, W * 0.75), 0.085);
+    sign = signAt(lh + 0.11, D / 2 + 0.02, Math.min(0.9, W * 0.95), 0.13);
   }
   return { sign };
 }
@@ -12971,7 +12976,7 @@ function resort(Q, o) {
     // Vordach am Eingang
     Q.box(MAT.concrete, Math.min(0.9, W * 0.4), 0.03, 0.3, 0, gh - 0.02, D / 2 + 0.12);
     for (const sx of [-1, 1]) Q.cyl(MAT.steel, 0.008, 0.008, gh - 0.04, sx * Math.min(0.42, W * 0.19), (gh - 0.04) / 2, D / 2 + 0.24, 6);
-    sign = signAt(gh + 0.004, D / 2 + 0.275, Math.min(0.8, W * 0.36), 0.075);
+    sign = signAt(yr + 0.2, D / 2 + 0.08, Math.min(1.3, W * 0.55), 0.17);
   } else {
     // Dachgarten
     for (const x of bayXs(W * 0.7, 0.25, 2)) Q.add(MAT.leaf, hedgeGeo(0.18, 0.08, 0.07, Math.round(x * 50) + 3, '#3d7a35'), new T.Matrix4().makeTranslation(x, yr + 0.052, D * 0.25), true);
@@ -13032,7 +13037,7 @@ function tower(Q, o) {
     // Vordach am Eingang
     Q.box(alu, Math.min(0.8, W * 0.45), 0.025, 0.28, 0, base - 0.02, D / 2 + 0.12);
     for (const sx of [-1, 1]) Q.cyl(alu, 0.007, 0.007, base - 0.04, sx * Math.min(0.38, W * 0.21), (base - 0.04) / 2, D / 2 + 0.24, 6);
-    return { sign: signAt(base + 0.01, D / 2 + 0.255, Math.min(0.8, W * 0.42), 0.075), blink: tip };
+    return { sign: signAt(lower + 0.16, d2 / 2 + 0.02, Math.min(1.1, w2 * 0.85), 0.16), blink: tip };
   }
   const top = y0 + Math.max(fh, Math.round((H - 0.08 - y0) / fh) * fh);
   shaft(W, D, y0, top);
@@ -13240,6 +13245,14 @@ lazy('brick', () => texMat(paint(512, 31, c => {
   blobs(c.g, null, c.W, c.H, c.r, 16, [['#6e2a1a', 0.18], ['#c86a48', 0.16]], 20, 70);
 }, { relief: 1.6 }), 0.55, { roughness: 0.85 }));
 lazy('patina', () => std('#5f9c88', { roughness: 0.55, metalness: 0.35 }));
+// Kupferdach mit Stehfalzen und Patina-Flecken
+lazy('copperRoof', () => texMat(paint(256, 35, c => {
+  const { g, h, W, H, r } = c; g.fillStyle = '#5f9c88'; g.fillRect(0, 0, W, H);
+  blobs(g, h, W, H, r, 30, [['#4d8a76', 0.45], ['#7fb7a2', 0.4], ['#8a6a3a', 0.12]], 10, 50, 0.02);
+  for (let y = 0; y < H; y += H / 6) { g.fillStyle = 'rgba(30,60,50,.45)'; g.fillRect(0, y, W, 2); g.fillStyle = 'rgba(200,240,225,.35)'; g.fillRect(0, y + 2, W, 1.5); h.fillStyle = gray(230); h.fillRect(0, y, W, 4); }
+  for (let i = 0; i < 40; i++) { const x = r() * W, y = r() * H; g.strokeStyle = 'rgba(40,80,65,.25)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (r() - 0.5) * 6, y + 10 + r() * 20); g.stroke(); }
+  speck(g, h, W, H, r, 3000, 0.08, 0.03);
+}, { relief: 1.8 }), 0.5, { roughness: 0.5, metalness: 0.3 }));
 lazy('bronze', () => std('#7a5a32', { roughness: 0.4, metalness: 0.8 }));
 lazy('marble', () => texMat(paint(512, 32, c => {
   const { g, h, W, H, r } = c; g.fillStyle = '#e4ddd0'; g.fillRect(0, 0, W, H);
@@ -13291,8 +13304,11 @@ function bank() {
   Q.pop();
   // Dach aus Kupfer mit Patina
   const span = 0.75, rise = 0.26, ang = Math.atan2(rise, span), slope = (span + 0.04) / Math.cos(ang), ly = y0 + colH + 0.175, len = 2.0;
-  for (const sg of [1, -1]) Q.box(MAT.patina, slope, 0.03, len, sg * (span + 0.04) / 2, ly + rise - (span + 0.04) / 2 * Math.tan(ang) + 0.015, -0.1, 0, { rz: -sg * ang });
+  for (const sg of [1, -1]) Q.box(MAT.copperRoof, slope, 0.03, len, sg * (span + 0.04) / 2, ly + rise - (span + 0.04) / 2 * Math.tan(ang) + 0.015, -0.1, 0, { rz: -sg * ang });
+  // First mit Zierkamm, Akroterien an den Giebelecken
   Q.box(MAT.gold, 0.03, 0.03, len, 0, ly + rise + 0.03, -0.1);
+  if (LOD > 1) for (let z = -len / 2 + 0.1; z < len / 2; z += 0.12) Q.sphere(MAT.gold, 0.012, 0, ly + rise + 0.055, z - 0.1, 6, 4);
+  for (const zz of [pz + 0.13, -0.1 - len / 2 + 0.03]) { Q.cyl(MAT.gold, 0.012, 0.03, 0.08, 0, ly + 0.3, zz, 8); Q.sphere(MAT.gold, 0.02, 0, ly + 0.355, zz, 8, 6); for (const sx of [-1, 1]) { Q.box(MAT.marble, 0.05, 0.06, 0.04, sx * 0.72, ly + 0.03, zz); Q.sphere(MAT.gold, 0.016, sx * 0.72, ly + 0.075, zz, 8, 6); } }
   Q.add(MAT.marble, prismG([[-0.75, 0], [0.75, 0], [0, 0.26]], 0.04), new T.Matrix4().makeTranslation(0, ly, -0.1 - len / 2 + 0.02));
   // Laternen an der Treppe
   for (const sx of [-1, 1]) { Q.push(sx * 0.72, 0, D / 2 - 0.12); Q.cyl(MAT.bronze, 0.012, 0.016, 0.38, 0, 0.19, 0, 8); Q.cyl(MAT.glass, 0.028, 0.02, 0.06, 0, 0.41, 0, 6); Q.sphere(MAT.bulb, 0.014, 0, 0.41, 0, 8, 6); Q.cyl(MAT.bronze, 0.002, 0.036, 0.03, 0, 0.455, 0, 6); Q.pop(); }
@@ -13458,6 +13474,309 @@ function hedge(along, len = 0.78) {
 }
 
 // ======================================================================
+//  Remake: Gärten und Requisiten. Gleiche Namen und Größen wie die klassischen
+//  Requisiten (look.js), damit Platzierung und Themen unverändert bleiben.
+// ======================================================================
+// Baut mit dem Baukasten in eine Gruppe; die Meshes dürfen danach mit allem anderen zusammengefasst werden
+function kg(fn) { const g = new T.Group(), Q = new Kit(); fn(Q, g); Q.build(g); g.children.forEach(m => { if (m.userData.keep) m.userData.keep = false; }); return g; }
+const pickR = (r, a) => a[Math.floor(r() * a.length)];
+// Felsbrocken: verbeulte Kugel mit Steinoberfläche
+const ROCK_GEO = {};
+function rockGeo(v) {
+  if (ROCK_GEO[v]) return ROCK_GEO[v];
+  let g = new T.IcosahedronGeometry(1, 1); g.deleteAttribute('normal'); g.deleteAttribute('uv'); g = T.mergeVertices(g);
+  const p = g.attributes.position, rn = rng(v * 31 + 5);
+  for (let i = 0; i < p.count; i++) { _v.fromBufferAttribute(p, i); const k = 0.78 + rn() * 0.4; p.setXYZ(i, _v.x * k, Math.max(-0.2, _v.y) * k, _v.z * k); }
+  g.computeVertexNormals();
+  return (ROCK_GEO[v] = g.toNonIndexed());
+}
+lazy('rock', () => texMat(paint(256, 41, c => { const { g, h, W, H, r } = c; g.fillStyle = '#8f8a80'; g.fillRect(0, 0, W, H); blobs(g, h, W, H, r, 30, [['#6f6a62', 0.5], ['#b2ada2', 0.5]], 10, 40, 0.15); speck(g, h, W, H, r, 5000, 0.12, 0.08); for (let i = 0; i < 12; i++) { let x = r() * W, y = r() * H; g.strokeStyle = 'rgba(40,35,30,.35)'; h.strokeStyle = gray(40); g.lineWidth = h.lineWidth = 1; g.beginPath(); h.beginPath(); g.moveTo(x, y); h.moveTo(x, y); for (let k = 0; k < 6; k++) { x += (r() - 0.5) * 20; y += r() * 10; g.lineTo(x, y); h.lineTo(x, y); } g.stroke(); h.stroke(); } }, { relief: 2.0 }), 0.3, { roughness: 0.9 }));
+lazy('redRock', () => texMat(paint(256, 42, c => { const { g, h, W, H, r } = c; g.fillStyle = '#b06a42'; g.fillRect(0, 0, W, H); for (let y = 0; y < H; y += 12) { g.fillStyle = rgba(shade('#b06a42', (r() - 0.5) * 0.3), 0.6); g.fillRect(0, y, W, 6 + r() * 6); h.fillStyle = gray(110 + r() * 60); h.fillRect(0, y, W, 6); } speck(g, h, W, H, r, 4000, 0.12, 0.06); }, { relief: 1.8 }), 0.3, { roughness: 0.95 }));
+lazy('ice', () => phys('#cfeaf7', { roughness: 0.08, transmission: 0, clearcoat: 1, envMapIntensity: 1.8, emissive: '#5fb8e0', emissiveIntensity: 0.05 }));
+lazy('snowGround', () => phys('#eef3f8', { roughness: 0.7, sheen: 0.4, sheenColor: '#ffffff' }));
+lazy('fabricRed', () => std('#b5452f', { roughness: 0.9, side: T.DoubleSide }));
+lazy('soil', () => std('#4a3423', { roughness: 1 }));
+const glowM = (key, color, emissive, day, night) => glowMat(key, color, emissive, day, night);
+function rock(Q, x, y, z, s, v, m) { Q.add(m || MAT.rock, rockGeo(v % 6), new T.Matrix4().compose(new T.Vector3(x, y, z), new T.Quaternion().setFromEuler(new T.Euler(0, v * 1.3, 0)), new T.Vector3(s, s * 0.7, s * 0.9))); }
+// Blumen in einem Beet
+function flowerSpots(Q, w, d, n, seed, y) { flowers(Q, 0, 0, w, d, n, seed, FLOWER_COLS, y); }
+const P2 = {
+  umbrella(r) {
+    return kg(Q => { const m = stripeMat('umb' + Math.floor(r() * 4), pickR(r, ['#e8384f', '#2f86b8', '#f2b134', '#1fb5ad']), '#f6f2ea', 10); Q.cyl(MAT.steel, 0.006, 0.006, 0.26, 0, 0.13, 0, 6); Q.cyl(m, 0.006, 0.13, 0.05, 0, 0.28, 0, 10); Q.sphere(MAT.white, 0.008, 0, 0.31, 0, 6, 4); });
+  },
+  lounger(r) {
+    return kg(Q => { const cushion = MAT['cush' + Math.floor(r() * 3)] || (MAT['cush' + Math.floor(r() * 3)] = std(pickR(r, ['#2f86b8', '#f2b134', '#1fb5ad']), { roughness: 0.85 }));
+      Q.box(MAT.deck, 0.17, 0.014, 0.075, 0, 0.032, 0); Q.box(cushion, 0.11, 0.012, 0.065, 0.02, 0.045, 0, 0, { round: 0.005 });
+      Q.box(MAT.deck, 0.07, 0.012, 0.075, -0.1, 0.06, 0, 0, { rz: -0.7 }); Q.box(cushion, 0.06, 0.01, 0.065, -0.096, 0.067, 0, 0, { rz: -0.7 });
+      for (const sx of [-0.07, 0.07]) for (const sz of [-0.03, 0.03]) Q.box(MAT.steel, 0.008, 0.03, 0.008, sx, 0.013, sz); });
+  },
+  torch() {
+    return kg((Q, g) => { Q.cyl(MAT.wood, 0.007, 0.01, 0.26, 0, 0.13, 0, 6); for (const y of [0.08, 0.16, 0.24]) Q.cyl(MAT.darkwood, 0.011, 0.011, 0.008, 0, y, 0, 6); Q.cyl(MAT.iron, 0.02, 0.012, 0.03, 0, 0.275, 0, 8);
+      const f = new T.Mesh(new G0.ConeGeometry(0.014, 0.05, 6), glowM('flame', '#ffb347', '#ff8a1c', 0.7, 3.2)); f.position.y = 0.31; g.add(f); });
+  },
+  rock(r, h) { return kg(Q => { const m = h === 3 ? MAT.redRock : MAT.rock, s = 0.06 * (0.7 + r() * 0.6), v = Math.floor(r() * 6); rock(Q, 0, 0.01, 0, s, v, m); if (r() < 0.6) rock(Q, s * 1.1, 0.005, s * 0.5, s * 0.5, v + 1, m); }); },
+  snowfir(r) { return kg(Q => pineK(Q, 0, 0, 0.75 + r() * 0.3, Math.floor(r() * 1000), true)); },
+  stoneLantern() {
+    return kg((Q, g) => { const lan = MAT.lanternStone || (MAT.lanternStone = std('#a9a49a', { roughness: 0.9 }));
+      Q.cyl(lan, 0.03, 0.036, 0.02, 0, 0.01, 0, 6); Q.cyl(lan, 0.011, 0.014, 0.08, 0, 0.06, 0, 6); Q.cyl(lan, 0.032, 0.026, 0.012, 0, 0.104, 0, 6);
+      Q.add(lan, hipGeo(0.075, 0.075, 0.03, 0.034), new T.Matrix4().makeTranslation(0, 0.142, 0)); Q.sphere(lan, 0.008, 0, 0.18, 0, 6, 4);
+      const l = new T.Mesh(new T.BoxGeometry(0.04, 0.03, 0.04), glowM('toro', '#f6e7c4', '#ffc46b', 0.12, 2.2)); l.position.y = 0.126; g.add(l); });
+  },
+  shrub(r) {
+    return kg(Q => { const rn = r || Math.random; Q.add(hedgeMat(), foamBlob(0.06, Math.floor(rn() * 12), null), new T.Matrix4().makeScale(1, 0.85, 1).setPosition(0, 0.05, 0), true); Q.add(hedgeMat(), foamBlob(0.042, Math.floor(rn() * 12) + 3, null), new T.Matrix4().makeTranslation(0.05, 0.035, 0.02), true); });
+  },
+  cactus(r) { return kg(Q => cactus(Q, 0, 0, 0, 1.1 + r() * 0.4, Math.floor(r() * 99))); },
+  agave(r) {
+    return kg(Q => { const c1 = lc('#5f8a58'), c2 = lc('#a7c29a'), rn = r || Math.random;
+      for (let k = 0; k < 9; k++) { const a = k / 9 * Math.PI * 2 + rn() * 0.3, L = 0.08 + rn() * 0.03, sh = new T.Shape(); sh.moveTo(-0.01, 0); sh.quadraticCurveTo(-0.008, L * 0.6, 0, L); sh.quadraticCurveTo(0.008, L * 0.6, 0.01, 0); const lg = new T.ShapeGeometry(sh, 3), cols = [], lp = lg.attributes.position; for (let i = 0; i < lp.count; i++) { const u = lp.getY(i) / L; cols.push(c1.r + (c2.r - c1.r) * u, c1.g + (c2.g - c1.g) * u, c1.b + (c2.b - c1.b) * u); } lg.setAttribute('color', new T.Float32BufferAttribute(cols, 3)); lg.computeVertexNormals();
+        Q.add(MAT.leafDS, lg, new T.Matrix4().makeRotationX(-0.55).premultiply(new T.Matrix4().makeRotationY(a)).setPosition(0, 0.005, 0), true); } });
+  },
+  surfboard(r) {
+    return kg(Q => { const col = pickR(r, ['#f25f5c', '#ffe066', '#247ba0', '#70c1b3']), m = MAT['surf' + col] || (MAT['surf' + col] = phys(col, { roughness: 0.3, clearcoat: 1 }));
+      Q.sphere(m, 1, 0, 0.12, 0, 14, 8, { sx: 0.034, sy: 0.13, sz: 0.008 }); Q.box(MAT.white, 0.004, 0.2, 0.0085, 0, 0.12, 0); });
+  },
+  snowman() {
+    return kg(Q => { for (const [rad, y] of [[0.045, 0.04], [0.033, 0.105], [0.024, 0.153]]) Q.sphere(MAT.snowGround, rad, 0, y, 0, 12, 8);
+      const carrot = MAT.carrot || (MAT.carrot = std('#f08a24')); Q.cyl(carrot, 0.001, 0.007, 0.03, 0, 0.153, 0.035, 6, { rx: Math.PI / 2 });
+      for (const sx of [-0.009, 0.009]) Q.sphere(MAT.black, 0.004, sx, 0.162, 0.021, 5, 4); for (const y of [0.09, 0.11, 0.125]) Q.sphere(MAT.black, 0.004, 0, y, 0.032, 5, 4);
+      Q.cyl(MAT.black, 0.018, 0.018, 0.03, 0, 0.19, 0, 10); Q.cyl(MAT.black, 0.028, 0.028, 0.004, 0, 0.175, 0, 12); Q.cyl(MAT.red, 0.028, 0.03, 0.012, 0, 0.13, 0, 10); });
+  },
+  pot(r) { return kg(Q => pot(Q, 0, 0, 0, 0.85, r() < 0.6 ? '#4a7a35' : null, Math.floor(r() * 12))); },
+  floorLantern() {
+    return kg((Q, g) => { Q.cyl(MAT.brass, 0.022, 0.026, 0.008, 0, 0.004, 0, 6); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; Q.box(MAT.brass, 0.004, 0.07, 0.004, Math.cos(a) * 0.024, 0.043, Math.sin(a) * 0.024); } Q.cyl(MAT.brass, 0.002, 0.032, 0.04, 0, 0.098, 0, 6); Q.sphere(MAT.brass, 0.007, 0, 0.122, 0, 6, 4);
+      const l = new T.Mesh(new G0.CylinderGeometry(0.021, 0.021, 0.066, 6), glowM('kasbah', '#f7d9a8', '#ffab4a', 0.15, 2.4)); l.position.y = 0.043; g.add(l); });
+  },
+  clayLantern() {
+    return kg((Q, g) => { Q.box(MAT.adobe, 0.05, 0.14, 0.05, 0, 0.07, 0, 0, { round: 0.01 }); for (const sx of [-1, 1]) Q.box(MAT.adobe, 0.008, 0.035, 0.035, sx * 0.024, 0.16, 0);
+      Q.sphere(MAT.adobe, 0.03, 0, 0.18, 0, 8, 5, { half: true }); const l = new T.Mesh(new G0.CylinderGeometry(0.017, 0.017, 0.035, 8), glowM('desert', '#f7d9a8', '#ff9a3c', 0.1, 2.4)); l.position.y = 0.16; g.add(l); });
+  },
+  woodLamp() {
+    return kg((Q, g) => { Q.box(MAT.darkwood, 0.02, 0.24, 0.02, 0, 0.12, 0); Q.box(MAT.darkwood, 0.05, 0.008, 0.05, 0, 0.24, 0); for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) Q.box(MAT.darkwood, 0.006, 0.045, 0.006, sx * 0.02, 0.265, sz * 0.02);
+      Q.add(MAT.shingle, hipGeo(0.07, 0.07, 0.035, 0.034), new T.Matrix4().makeTranslation(0, 0.287, 0)); Q.box(MAT.snow, 0.05, 0.008, 0.05, 0, 0.305, 0, 0, { round: 0.003 });
+      const l = new T.Mesh(new T.BoxGeometry(0.034, 0.038, 0.034), glowM('alp', '#f6e7c4', '#ffc46b', 0.1, 2.4)); l.position.y = 0.264; g.add(l); });
+  },
+  lampPost() {
+    return kg((Q, g) => { Q.cyl(MAT.iron, 0.016, 0.02, 0.02, 0, 0.01, 0, 8); Q.cyl(MAT.iron, 0.008, 0.012, 0.28, 0, 0.15, 0, 8); Q.cyl(MAT.gold, 0.013, 0.013, 0.006, 0, 0.1, 0, 8); Q.cyl(MAT.iron, 0.004, 0.032, 0.03, 0, 0.36, 0, 8); Q.sphere(MAT.gold, 0.006, 0, 0.38, 0, 6, 4);
+      const l = new T.Mesh(new G0.SphereGeometry(0.022, 10, 8), glowM('palais', '#fff3d0', '#ffd28a', 0.15, 2.6)); l.position.y = 0.32; g.add(l); });
+  },
+  topiary(r) {
+    return kg(Q => { Q.box(MAT.stone, 0.065, 0.055, 0.065, 0, 0.0275, 0, 0, { round: 0.006 }); Q.box(MAT.stone, 0.075, 0.01, 0.075, 0, 0.058, 0);
+      if (r() < 0.5) { const cg = new G0.ConeGeometry(0.046, 0.17, 10, 3); cg.deleteAttribute('uv'); Q.add(hedgeMat(), cg, new T.Matrix4().makeTranslation(0, 0.145, 0), true); }
+      else { Q.add(hedgeMat(), foamBlob(0.05, Math.floor(r() * 12), null), new T.Matrix4().makeTranslation(0, 0.11, 0), true); } });
+  },
+  flowerBed(r) {
+    return kg(Q => { Q.box(MAT.stone, 0.27, 0.035, 0.13, 0, 0.0175, 0, 0, { round: 0.006 }); Q.box(MAT.soil, 0.245, 0.006, 0.105, 0, 0.036, 0); flowerSpots(Q, 0.22, 0.08, 18, Math.floor((r ? r() : Math.random()) * 99), 0.045); });
+  },
+  bench() {
+    return kg(Q => { for (const z of [-0.012, 0.004, 0.02]) Q.box(MAT.wood, 0.16, 0.007, 0.013, 0, 0.046, z); for (const y of [0.068, 0.088]) Q.box(MAT.wood, 0.16, 0.012, 0.006, 0, y, -0.026, 0, { rx: -0.15 });
+      for (const sx of [-0.066, 0.066]) { Q.box(MAT.iron, 0.008, 0.045, 0.045, sx, 0.022, 0); Q.box(MAT.iron, 0.008, 0.06, 0.008, sx, 0.075, -0.026); Q.box(MAT.iron, 0.008, 0.008, 0.04, sx, 0.065, 0.0); } });
+  },
+};
+// Busch und Blumenfleck für die freien Rasenflächen
+function bush(r) { return kg(Q => { for (let k = 0; k < 3; k++) Q.add(hedgeMat(), foamBlob(0.08 + r() * 0.05, Math.floor(r() * 12), null), new T.Matrix4().makeScale(1, 0.8, 1).setPosition((r() - 0.5) * 0.2, 0.06, (r() - 0.5) * 0.2), true); }); }
+function flowerPatch(r, rad) { return kg(Q => { Q.cyl(MAT.soil, rad, rad + 0.01, 0.012, 0, 0.006, 0, 14); Q.add(hedgeMat(), new G0.CylinderGeometry(rad * 0.92, rad * 0.92, 0.02, 14).translate(0, 0.016, 0)); flowers(Q, 0, 0, rad * 1.3, rad * 1.3, 26, Math.floor(r() * 99), FLOWER_COLS, 0.03); }); }
+
+// ---------------- Große Gartenstücke (großes Brett) ----------------
+const B2 = {
+  mountain(r, s) {
+    return kg((Q, g) => {
+      [[0, 0, 0.85, 1.15], [0.62, 0.3, 0.6, 0.8], [-0.58, 0.22, 0.55, 0.65]].forEach(([x, z, rad, hg], i) => {
+        // Berg aus verbeultem Kegel, oben Schnee
+        let cg = new G0.ConeGeometry(rad * s, hg * s, 12, 6); cg.deleteAttribute('uv'); cg.deleteAttribute('normal'); cg = T.mergeVertices(cg);
+        const p = cg.attributes.position, rn = rng(i * 7 + 3);
+        for (let k = 0; k < p.count; k++) { _v.fromBufferAttribute(p, k); const t = (_v.y / (hg * s)) + 0.5; if (t < 0.98) { const n = 1 + (rn() - 0.5) * 0.28; p.setXYZ(k, _v.x * n, _v.y + (rn() - 0.5) * 0.04 * s, _v.z * n); } }
+        cg.computeVertexNormals(); cg.translate(x * s, hg * s / 2, z * s);
+        Q.add(MAT.rock, cg);
+        const sg = new G0.ConeGeometry(rad * s * 0.4, hg * s * 0.36, 12, 1, true); sg.translate(x * s, hg * s * 0.82 + 0.01, z * s);
+        Q.add(MAT.snowGround, sg);
+      });
+      Q.cyl(MAT.lawn, 1.2 * s, 1.3 * s, 0.05, 0, 0.025, 0, 18);
+      for (let k = 0; k < 5; k++) { const a = r() * Math.PI * 2; pineK(Q, Math.cos(a) * 1.05 * s, Math.sin(a) * 0.95 * s, 0.85 + r() * 0.3, Math.floor(r() * 999), true); }
+      for (let k = 0; k < 6; k++) { const a = r() * Math.PI * 2; rock(Q, Math.cos(a) * 1.0 * s, 0.05, Math.sin(a) * 0.9 * s, 0.05 + r() * 0.05, k); }
+    });
+  },
+  hut(r, s) {
+    return kg((Q, g) => {
+      const w = 0.5 * s, d = 0.38 * s, h = 0.32 * s;
+      Q.box(MAT.rubble, w + 0.04, 0.05, d + 0.04, 0, 0.025, 0);
+      Q.box(MAT.logs, w, h, d, 0, 0.05 + h / 2, 0);
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (let k = 0; k < 6; k++) Q.cyl(MAT.wood, 0.014, 0.014, 0.035, sx * (w / 2 + 0.01), 0.07 + k * h / 6, sz * (d / 2 + 0.01), 6, { rz: Math.PI / 2 });
+      Q.add(MAT.darkwood, new T.PlaneGeometry(0.09 * s, 0.17 * s), new T.Matrix4().makeTranslation(0, 0.05 + 0.085 * s, d / 2 + 0.002), true);
+      Q.push(w * 0.28, 0.05 + h * 0.55, d / 2 + 0.002); appliedWin(Q, 0, 0, 0.07 * s, 0.06 * s, MAT.white, r, { lit: 0.6 }); Q.pop();
+      const span = d / 2 + 0.05, rise = 0.2 * s, ang = Math.atan2(rise, d / 2), slope = span / Math.cos(ang);
+      for (const sg of [1, -1]) { Q.box(MAT.shingle, w + 0.12, 0.025, slope, 0, 0.05 + h + rise / 2, sg * span / 2, 0, { rx: sg * ang }); Q.box(MAT.snow, w + 0.08, 0.022, slope * 0.65, 0, 0.05 + h + rise * 0.7 + 0.02, sg * span * 0.32, 0, { rx: sg * ang, round: 0.008 }); }
+      for (const sx of [-1, 1]) { Q.push(sx * w / 2, 0.05 + h, 0, sx * Math.PI / 2); Q.add(MAT.logs, prismG([[-d / 2, 0], [d / 2, 0], [0, rise]], 0.02), new T.Matrix4().makeTranslation(0, 0, -0.02)); Q.pop(); }
+      Q.box(MAT.rubble, 0.07 * s, 0.2 * s, 0.07 * s, 0.14 * s, 0.05 + h + 0.12 * s, -0.08 * s);
+      for (let i = 0; i < 3; i++) for (let k = 0; k < 3 - i; k++) Q.cyl(MAT.wood, 0.02, 0.02, 0.2, -w / 2 - 0.06, 0.07 + i * 0.035, -d / 4 + k * 0.042 + i * 0.021, 7, { rx: Math.PI / 2 });
+    });
+  },
+  koiPond(r, s) {
+    return kg((Q, g) => {
+      Q.cyl(MAT.granite, 1, 1, 0.03, 0, 0.015, 0, 28, { sx: 0.98 * s, sz: 0.66 * s });
+      Q.cyl(MAT.water, 1, 1, 0.006, 0, 0.032, 0, 28, { sx: 0.92 * s, sz: 0.6 * s });
+      for (let k = 0; k < 18; k++) { const a = (k / 18) * Math.PI * 2; rock(Q, Math.cos(a) * 0.97 * s, 0.03, Math.sin(a) * 0.65 * s, 0.04 + r() * 0.025, k); }
+      // rote Bogenbrücke mit Planken und Geländer
+      const R = 0.42 * s;
+      for (const z of [-0.07, 0.07]) Q.add(MAT.lacRed, new G0.TorusGeometry(R, 0.012, 5, 16, Math.PI), new T.Matrix4().makeScale(1, 0.45, 1).setPosition(0, 0.03, z));
+      for (let i = 1; i < 12; i++) { const a = i / 12 * Math.PI; Q.box(MAT.deck, 0.035, 0.008, 0.14, Math.cos(a) * R, 0.03 + Math.sin(a) * R * 0.45, 0, 0, { rz: Math.atan2(Math.cos(a) * 0.45, -Math.sin(a)) - Math.PI / 2 }); }
+      for (const z of [-0.07, 0.07]) for (let i = 1; i < 8; i++) { const a = i / 8 * Math.PI; Q.box(MAT.lacRed, 0.008, 0.06, 0.008, Math.cos(a) * R, 0.06 + Math.sin(a) * R * 0.45, z); }
+      const koi = MAT.koi || (MAT.koi = std('#f07a2a', { roughness: 0.4 }));
+      for (let k = 0; k < 5; k++) Q.sphere(k % 2 ? koi : MAT.white, 0.022, (r() - 0.5) * 1.0 * s, 0.034, (r() - 0.5) * 0.6 * s, 8, 5, { sx: 1.8, sy: 0.4, sz: 0.7 });
+      const pad = MAT.lily || (MAT.lily = std('#5c9a3c', { roughness: 0.6 }));
+      for (let k = 0; k < 5; k++) Q.cyl(pad, 0.05, 0.05, 0.006, (r() - 0.5) * 1.2 * s, 0.036, (r() - 0.5) * 0.7 * s, 10);
+    });
+  },
+  zen(r, s) {
+    return kg(Q => {
+      const zm = MAT.zenGravel || (MAT.zenGravel = texMat(paint(256, 43, c => { const { g, h, W, H, r: rr2 } = c; g.fillStyle = '#e3dccb'; g.fillRect(0, 0, W, H); for (let y = 0; y < H; y += 8) { g.fillStyle = 'rgba(120,110,95,.35)'; g.fillRect(0, y, W, 2); h.fillStyle = gray(70); h.fillRect(0, y, W, 3); } speck(g, h, W, H, rr2, 6000, 0.1, 0.05); }, { relief: 1.4 }), 0.35, { roughness: 1 }));
+      Q.box(zm, 1.2 * s, 0.02, 0.85 * s, 0, 0.01, 0);
+      for (const [x, z, w, d] of [[0, 0.44, 1.24, 0.03], [0, -0.44, 1.24, 0.03], [0.62, 0, 0.03, 0.88], [-0.62, 0, 0.03, 0.88]]) Q.box(MAT.darkwood, w * s, 0.04, d * s, x * s, 0.02, z * s);
+      [[-0.3, -0.1, 1], [0.25, 0.15, 0.7], [0.35, -0.2, 0.5]].forEach(([x, z, k], i) => rock(Q, x * s, 0.02, z * s, 0.1 * k, i + 2));
+      Q.add(MAT.lawn, new G0.CylinderGeometry(0.09, 0.1, 0.02, 10), new T.Matrix4().makeTranslation(-0.3 * s, 0.02, -0.1 * s));
+    });
+  },
+  dunes(r, s) {
+    return kg(Q => { for (let k = 0; k < 4; k++) { const sx = (0.5 + r() * 0.4) * s, sy = (0.12 + r() * 0.12) * s, sz = (0.3 + r() * 0.25) * s; Q.add(MAT.sand, new G0.SphereGeometry(1, 20, 8, 0, Math.PI * 2, 0, Math.PI / 2), new T.Matrix4().compose(new T.Vector3((r() - 0.5) * 1.2 * s, 0, (r() - 0.5) * 0.8 * s), new T.Quaternion().setFromEuler(new T.Euler(0, r() * 3, 0)), new T.Vector3(sx, sy, sz))); }
+      for (let k = 0; k < 3; k++) cactus(Q, (r() - 0.5) * 1.3 * s, (r() - 0.5) * 0.9 * s, 0, 1.0, k + 20); });
+  },
+  oasis(r, s) {
+    return kg(Q => { Q.cyl(MAT.lawn, 1, 1, 0.02, 0, 0.01, 0, 24, { sx: 0.62 * s, sz: 0.46 * s }); Q.cyl(MAT.water, 1, 1, 0.006, 0, 0.022, 0, 24, { sx: 0.48 * s, sz: 0.34 * s });
+      for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; rock(Q, Math.cos(a) * 0.5 * s, 0.02, Math.sin(a) * 0.36 * s, 0.03 + r() * 0.02, k, MAT.redRock); }
+      for (let k = 0; k < 3; k++) { const a = (k / 3) * Math.PI * 2 + 0.5; palm(Q, Math.cos(a) * 0.62 * s, Math.sin(a) * 0.46 * s, 1.0 + r() * 0.3, Math.floor(r() * 99)); } });
+  },
+  tent(r, s) {
+    return kg(Q => { const cloth = stripeMat('tentCloth', '#b5452f', '#e9c27a', 8);
+      for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) Q.cyl(MAT.wood, 0.008, 0.01, 0.22 * s, x * 0.22 * s, 0.11 * s, z * 0.16 * s, 6);
+      Q.push(0, 0.22 * s, 0, Math.PI / 2); Q.add(cloth, prismG([[-0.18 * s, 0], [0.18 * s, 0], [0, 0.14 * s]], 0.5 * s), new T.Matrix4().makeTranslation(0, 0, -0.25 * s)); Q.pop();
+      Q.box(MAT.carpet || (MAT.carpet = std('#8e1a2c', { roughness: 0.95 })), 0.44 * s, 0.008, 0.32 * s, 0, 0.004, 0);
+      for (const sx of [-1, 1]) Q.box(MAT.gold, 0.06, 0.03, 0.06, sx * 0.1 * s, 0.02, 0, 0, { round: 0.01 }); });
+  },
+  lagoon(r, s) {
+    return kg(Q => { Q.cyl(MAT.sand, 1, 1, 0.02, 0, 0.01, 0, 32, { sx: 1.3 * s, sz: 0.9 * s }); Q.cyl(MAT.pool, 1, 1, 0.006, 0, 0.022, 0, 32, { sx: 1.12 * s, sz: 0.74 * s });
+      Q.cyl(MAT.sand, 1, 1.1, 0.05, 0.3 * s, 0.03, 0.05 * s, 16, { sx: 0.24 * s, sz: 0.18 * s }); palm(Q, 0.3 * s, 0.05 * s, 1.15, 31);
+      for (let k = 0; k < 2; k++) lounger(Q, -0.9 * s + k * 0.12, 0.75 * s, 0.02, 0, MAT.white); });
+  },
+  frozenLake(r, s) {
+    return kg(Q => { Q.cyl(MAT.snowGround, 1, 1, 0.02, 0, 0.01, 0, 28, { sx: 1.05 * s, sz: 0.75 * s }); Q.cyl(MAT.ice, 1, 1, 0.006, 0, 0.022, 0, 28, { sx: 0.92 * s, sz: 0.64 * s });
+      for (let k = 0; k < 4; k++) Q.box(MAT.snowGround, 0.08 + r() * 0.1, 0.004, 0.02, (r() - 0.5) * 1.1 * s, 0.026, (r() - 0.5) * 0.8 * s, r() * 3); });
+  },
+  igloo(r, s) {
+    return kg(Q => { const iceBlock = MAT.igloo || (MAT.igloo = texMat(paint(256, 44, c => { stones(c, { rows: 8, cols: 6, joint: 4, color: '#f2f6fa', mortar: '#c9d6e2', vary: 0.04, bevel: 4 }); }, { relief: 1.6 }), 0.2, { roughness: 0.7 }));
+      Q.sphere(iceBlock, 0.3 * s, 0, 0, 0, 20, 10, { half: true });
+      Q.add(iceBlock, new G0.CylinderGeometry(0.12 * s, 0.12 * s, 0.22 * s, 12, 1, false, 0, Math.PI), new T.Matrix4().makeRotationX(Math.PI / 2).premultiply(new T.Matrix4().makeRotationZ(Math.PI / 2)).setPosition(0, 0, 0.3 * s));
+      Q.add(MAT.black, new G0.CircleGeometry(0.09 * s, 10, 0, Math.PI), new T.Matrix4().makeTranslation(0, 0.002, 0.412 * s), true); });
+  },
+  fountain(r, s, h) {
+    return kg(Q => { const stone = h === 6 ? MAT.zellige : MAT.stone;
+      Q.cyl(stone, 0.48 * s, 0.5 * s, 0.1, 0, 0.05, 0, 8); Q.cyl(MAT.water, 0.42 * s, 0.42 * s, 0.006, 0, 0.098, 0, 8);
+      Q.cyl(MAT.stone, 0.05, 0.07, 0.3, 0, 0.2, 0, 10); Q.cyl(MAT.stone, 0.16, 0.08, 0.05, 0, 0.36, 0, 12); Q.cyl(MAT.water, 0.14, 0.14, 0.006, 0, 0.383, 0, 12);
+      Q.cyl(MAT.stone, 0.03, 0.04, 0.08, 0, 0.42, 0, 8); Q.sphere(MAT.gold, 0.035, 0, 0.48, 0, 10, 8); });
+  },
+  stall(r, s) {
+    return kg(Q => { const col = pickR(r, ['#9b5de5', '#e0a43a', '#c0392b', '#2f7f8f']), aw = stripeMat('stall' + col, col, '#f3e6c8', 8);
+      for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) Q.box(MAT.wood, 0.018, 0.27, 0.018, x * 0.17, 0.135, z * 0.11);
+      Q.box(aw, 0.42, 0.01, 0.3, 0, 0.275, 0, 0, { rx: 0.18 }); Q.box(aw, 0.42, 0.04, 0.004, 0, 0.245, 0.15);
+      Q.box(MAT.wood, 0.36, 0.08, 0.1, 0, 0.04, 0.08); Q.box(MAT.darkwood, 0.38, 0.01, 0.12, 0, 0.085, 0.08);
+      for (let k = 0; k < 4; k++) { const fc = pickR(r, ['#f2b134', '#e8384f', '#2fc46b', '#f27fa6']), m = MAT['fruit' + fc] || (MAT['fruit' + fc] = std(fc, { roughness: 0.6 })); Q.box(MAT.wood, 0.07, 0.025, 0.07, -0.12 + k * 0.08, 0.1, 0.08); for (let i = 0; i < 4; i++) Q.sphere(m, 0.012, -0.12 + k * 0.08 + (i % 2 - 0.5) * 0.025, 0.12, 0.08 + (i < 2 ? -0.015 : 0.015), 6, 4); } });
+  },
+  parterre(r, s) {
+    return kg(Q => { const W = 1.0 * s, Dp = 0.66 * s;
+      Q.box(MAT.lawn, W, 0.02, Dp, 0, 0.01, 0);
+      for (const [x, z, l, rot] of [[0, Dp / 2, W, 0], [0, -Dp / 2, W, 0], [W / 2, 0, Dp, 1], [-W / 2, 0, Dp, 1]]) { const hg = hedgeGeo(l, 0.06, 0.07, Math.round(l * 50), null); if (rot) hg.rotateY(Math.PI / 2); Q.add(hedgeMat(), hg, new T.Matrix4().makeTranslation(x, 0.02, z), true); }
+      Q.box(MAT.gravel, W * 0.08, 0.004, Dp - 0.1, 0, 0.022, 0); Q.box(MAT.gravel, W - 0.1, 0.004, Dp * 0.1, 0, 0.022, 0);
+      for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { Q.box(MAT.soil, W * 0.36, 0.008, Dp * 0.32, x * W * 0.24, 0.024, z * Dp * 0.24); flowers(Q, x * W * 0.24, z * Dp * 0.24, W * 0.32, Dp * 0.28, 16, Math.round(x * 7 + z * 3 + 20), FLOWER_COLS, 0.032); }
+      for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const cg = new G0.ConeGeometry(0.05, 0.18, 10, 3); cg.deleteAttribute('uv'); Q.add(hedgeMat(), cg, new T.Matrix4().makeTranslation(x * (W / 2 - 0.08), 0.11, z * (Dp / 2 - 0.08)), true); } });
+  },
+  lifeguard() {
+    return kg(Q => { for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) Q.box(MAT.white, 0.018, 0.3, 0.018, x * 0.08, 0.15, z * 0.08, 0, { rx: z * 0.08, rz: -x * 0.08 });
+      Q.box(MAT.deck, 0.22, 0.02, 0.22, 0, 0.3, 0); Q.box(MAT.red, 0.2, 0.1, 0.015, 0, 0.36, 0.1); railing(Q, MAT.white, 0.2, 0.06, 0, 0.31, -0.1, 0, 0.04);
+      for (let i = 0; i < 6; i++) Q.box(MAT.white, 0.1, 0.008, 0.015, 0, 0.04 + i * 0.045, 0.13 + i * 0.004);
+      Q.add(MAT.red, hipGeo(0.3, 0.3, 0.08, 0.149), new T.Matrix4().makeTranslation(0, 0.46, 0)); Q.box(MAT.white, 0.01, 0.12, 0.01, 0, 0.4, 0);
+      Q.add(MAT.buoy || (MAT.buoy = std('#e8384f', { roughness: 0.5 })), new G0.TorusGeometry(0.035, 0.011, 6, 14), new T.Matrix4().makeTranslation(0, 0.2, 0.09)); });
+  },
+};
+// Wege: Texturen in Weltmaß statt gestreckter Kachel
+function uvBox(geo) { const g = geo.index ? geo.toNonIndexed() : geo; boxUV(g); return g; }
+const PATH_RM = { wood: 'deck', flag: 'pavers', slab: 'terracotta', carpet: 'carpet' };
+function pathMatRM(kind) { const k = PATH_RM[kind]; return k ? (k === 'carpet' ? (MAT.carpet || (MAT.carpet = std('#8e1a2c', { roughness: 0.95 }))) : MAT[k]) : null; }
+
+// beidseitige Variante eines Materials (für flache Formen, deren Ausrichtung nicht feststeht)
+function ds(m) { const k = '_ds'; if (!m.userData[k]) { const c = m.clone(); c.side = T.DoubleSide; c.userData = {}; m.userData[k] = own(c); } return m.userData[k]; }
+lazy('sea', () => phys('#2a8fb0', { roughness: 0.05, clearcoat: 1, envMapIntensity: 1.5, side: T.DoubleSide }));
+
+// ---------------- Kleinteile ----------------
+// Verkaufsschild: Tafel mit Goldrahmen, an einem schmiedeeisernen Galgen
+function saleSign(faceM) {
+  return kg((Q, g) => {
+    Q.box(MAT.granite, 0.08, 0.03, 0.08, -0.26, 0.015, 0, 0, { round: 0.008 });
+    Q.cyl(MAT.iron, 0.012, 0.015, 0.6, -0.26, 0.3, 0, 8);
+    Q.sphere(MAT.gold, 0.02, -0.26, 0.62, 0, 10, 8);
+    Q.box(MAT.iron, 0.58, 0.016, 0.016, 0.02, 0.57, 0);
+    Q.add(MAT.iron, new G0.TorusGeometry(0.08, 0.006, 4, 10, Math.PI / 2), new T.Matrix4().makeRotationZ(Math.PI).setPosition(-0.18, 0.57, 0));
+    for (const x of [-0.18, 0.22]) Q.box(MAT.brass, 0.004, 0.05, 0.004, x, 0.54, 0);
+    Q.box(MAT.gold, 0.6, 0.31, 0.026, 0.02, 0.36, 0, 0, { round: 0.008 });
+    const b = new T.Mesh(new T.BoxGeometry(0.56, 0.27, 0.03), [MAT.cream, MAT.cream, MAT.cream, MAT.cream, faceM, faceM]);
+    b.position.set(0.02, 0.36, 0); b.castShadow = true; g.add(b);
+  });
+}
+// Fahnenmast: Steinsockel, Messingmast mit Ringen, goldene Kugel
+function flagPole() {
+  return kg(Q => {
+    Q.box(MAT.stone, 0.1, 0.05, 0.1, 0, 0.025, 0, 0, { round: 0.01 });
+    Q.box(MAT.stone, 0.07, 0.03, 0.07, 0, 0.065, 0);
+    Q.cyl(MAT.brass, 0.009, 0.014, 0.92, 0, 0.54, 0, 10);
+    for (const y of [0.1, 0.4]) Q.cyl(MAT.gold, 0.016, 0.016, 0.01, 0, y, 0, 10);
+    Q.sphere(MAT.gold, 0.022, 0, 1.01, 0, 12, 8);
+  });
+}
+// Würfel: gerundetes Elfenbein mit eingeprägten Augen bzw. Feldern in Lackfarbe
+function dieFace(kind, v) {
+  return paint(192, 9, c => {
+    const { g, h, m, W } = c;
+    if (kind === 'pips') {
+      const gr = g.createLinearGradient(0, 0, W, W); gr.addColorStop(0, '#fffaf0'); gr.addColorStop(1, '#efe6d2'); g.fillStyle = gr; g.fillRect(0, 0, W, W);
+      speck(g, null, W, W, c.r, 800, 0.03, 0);
+      const P = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] }[v];
+      for (const [x, y] of P) {
+        const cx = W / 2 + x * W * 0.25, cy = W / 2 + y * W * 0.25, rad = v === 1 ? W * 0.12 : W * 0.085;
+        g.fillStyle = v === 1 ? '#a3122a' : '#1c1a17'; g.beginPath(); g.arc(cx, cy, rad, 0, 7); g.fill();
+        g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.arc(cx - rad * 0.3, cy - rad * 0.3, rad * 0.35, 0, 7); g.fill();
+        h.fillStyle = gray(60); h.beginPath(); h.arc(cx, cy, rad, 0, 7); h.fill();
+      }
+      m.fillStyle = 'rgb(0,70,0)'; m.fillRect(0, 0, W, W);
+    } else {
+      const cfg = { gruen: ['#1f9a53', '✓'], rot: ['#c8343a', '✕'], H: ['#2a63cc', 'H'], '2': ['#e08e0c', '2'] }[v];
+      g.fillStyle = '#fffaf0'; g.fillRect(0, 0, W, W);
+      g.fillStyle = cfg[0]; rr(g, W * 0.1, W * 0.1, W * 0.8, W * 0.8, W * 0.12); g.fill();
+      h.fillStyle = gray(150); rr(h, W * 0.1, W * 0.1, W * 0.8, W * 0.8, W * 0.12); h.fill();
+      g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `700 ${W * 0.55}px ${FONT_UI}`; g.fillText(cfg[1], W / 2, W * 0.54);
+      h.fillStyle = gray(200); h.textAlign = 'center'; h.textBaseline = 'middle'; h.font = g.font; h.fillText(cfg[1], W / 2, W * 0.54);
+      m.fillStyle = 'rgb(0,50,0)'; m.fillRect(0, 0, W, W);
+    }
+  }, { relief: 1.6, blur: 0.8, mr: true, rough: 0.3 });
+}
+function die(kind, faces) {
+  const mats = faces.map(v => { const t = dieFace(kind, v); for (const x of [t.map, t.normalMap, t.mr]) { x.repeat.set(1, 1); x.wrapS = x.wrapT = T.ClampToEdgeWrapping; } return own(new T.MeshPhysicalMaterial({ map: t.map, normalMap: t.normalMap, roughnessMap: t.mr, roughness: 1, clearcoat: 0.6, clearcoatRoughness: 0.15 })); });
+  const m = new T.Mesh(new T.RoundedBoxGeometry(1, 1, 1, 4, 0.13), mats);
+  m.castShadow = true;
+  return m;
+}
+// Würfelschale: Holzrahmen mit grünem Filz
+function diceTray(renderer, scene) {
+  const pm = new T.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(new T.RoomEnvironment(), 0.04).texture; pm.dispose();
+  scene.environmentIntensity = 0.5;
+  const felt = MAT.felt || (MAT.felt = texMat(paint(256, 45, c => { const { g, h, W, H, r } = c; g.fillStyle = '#1f5a3a'; g.fillRect(0, 0, W, H); speck(g, h, W, H, r, 20000, 0.12, 0.05, 0.5, 1.2); }, { relief: 0.6 }), 1.2, { roughness: 1 }));
+  return kg((Q, g) => {
+    const W = 6.6, D = 2.3, z = 0.25;
+    Q.box(felt, W, 0.06, D, 0, -0.031, z);
+    for (const [x, zz, w, d] of [[0, D / 2 + 0.1, W + 0.4, 0.2], [0, -D / 2 - 0.1, W + 0.4, 0.2], [W / 2 + 0.1, 0, 0.2, D], [-W / 2 - 0.1, 0, 0.2, D]]) Q.box(MAT.darkwood, w, 0.22, d, x, 0.05, z + zz, 0, { round: 0.05 });
+    for (const [x, zz, w, d] of [[0, D / 2 + 0.1, W + 0.42, 0.06], [0, -D / 2 - 0.1, W + 0.42, 0.06], [W / 2 + 0.1, 0, 0.06, D + 0.4], [-W / 2 - 0.1, 0, 0.06, D + 0.4]]) Q.box(MAT.brass, w, 0.02, d, x, 0.17, z + zz);
+    g.children.forEach(m => { m.castShadow = false; m.receiveShadow = true; });
+  });
+}
+
+// ======================================================================
 //  Remake: Licht und Schnittstelle zum Spiel
 // ======================================================================
 // Umgebung für Spiegelungen: weich ausgeleuchteter Raum (wie in der Remake-Vorschau)
@@ -13480,7 +13799,7 @@ function light(p) {
   for (const k of ['roomLit', 'paper', 'office']) { const d = Object.getOwnPropertyDescriptor(MAT, k); if (d && 'value' in d) d.value.emissiveIntensity = win * (k === 'office' ? 0.8 : k === 'paper' ? 0.55 : 1); }
   const b = Object.getOwnPropertyDescriptor(MAT, 'bulb'); if (b && 'value' in b) b.value.emissiveIntensity = 0.15 + p.lamp * 5;
 }
-const RM_API = { MAT, std, phys, lc, table, lawn, lawnMat, road, tile, star, gantry, tree, car, gate, lampPost, part, env, light, topUV, hedgeGeo, Kit, bank, townHall, pensionHouse, hedge };
+const RM_API = { MAT, std, phys, lc, table, lawn, lawnMat, road, tile, star, gantry, tree, car, gate, lampPost, part, env, light, topUV, hedgeGeo, Kit, bank, townHall, pensionHouse, hedge, P2, B2, bush, flowerPatch, uvBox, pathMatRM, ds, saleSign, flagPole, die, diceTray };
 
 return RM_API;
 })();
@@ -15313,12 +15632,13 @@ function buildEntry(h, D, sp) {
     if (th.path === 'stones') {
       const n = Math.max(1, Math.round(len / 0.11));
       for (let k = 0; k < n; k++) {
-        const st = mesh(new T.CylinderGeometry(0.045, 0.05, 0.012, 9), mat('#9b978e', { roughness: 0.9 }), false, true);
+        const st = mesh(new T.CylinderGeometry(0.045, 0.05, 0.012, 9), REMAKE ? RM.MAT.granite : mat('#9b978e', { roughness: 0.9 }), false, true);
         st.position.set(-len / 2 + ((k + 0.5) / n) * len, 0.046, (k % 2 ? 1 : -1) * 0.03);
         pg.add(st);
       }
     } else {
-      const p = mesh(new T.BoxGeometry(len, 0.006, w), pathMat(th.path), false, true);
+      const pm = REMAKE && RM.pathMatRM(th.path);
+      const p = pm ? mesh(RM.uvBox(new T.BoxGeometry(len, 0.006, w)), pm, false, true) : mesh(new T.BoxGeometry(len, 0.006, w), pathMat(th.path), false, true);
       p.position.y = 0.043;
       pg.add(p);
     }
@@ -15484,6 +15804,8 @@ const BIG = {
     return g;
   },
 };
+// Remake: dieselben Requisiten und Gartenstücke, neu gebaut
+if (REMAKE) { Object.assign(PROP, RM.P2); Object.assign(BIG, RM.B2); }
 // Thema für das große Brett: [Art, Anzahl, Platzbedarf bei Maßstab 2]
 const THEME_BIG = [
   [['lifeguard', 1, 0.3]],
@@ -15526,9 +15848,9 @@ function seaStrip(h, D, sp) {
   root.matrixAutoUpdate = false;
   root.matrix.set(uDir[0], vDir[0], 0, p0.x, 0, 0, 1, 0, uDir[1], vDir[1], 0, p0.z, 0, 0, 0, 1);
   const layer = (geo, m, y) => { const o = mesh(geo, m, false, true); o.position.z = y; root.add(o); return o; };
-  layer(band(0.28, 0.1), mat('#d4b67a', { roughness: 0.95, side: T.DoubleSide }), 0.042);
-  layer(band(0.06, 0.1), mat('#ffffff', { roughness: 0.6, side: T.DoubleSide }), 0.044);
-  const water = layer(band(0, 0.1), new T.MeshStandardMaterial({ color: '#3fb4dc', roughness: 0.08, metalness: 0.25, emissive: '#0d4f6b', emissiveIntensity: 0.35, side: T.DoubleSide }), 0.046);
+  layer(band(0.28, 0.1), REMAKE ? RM.ds(RM.MAT.sand) : mat('#d4b67a', { roughness: 0.95, side: T.DoubleSide }), 0.042);
+  layer(band(0.06, 0.1), REMAKE ? RM.ds(RM.MAT.white) : mat('#ffffff', { roughness: 0.6, side: T.DoubleSide }), 0.044);
+  const water = layer(band(0, 0.1), REMAKE ? RM.MAT.sea : new T.MeshStandardMaterial({ color: '#3fb4dc', roughness: 0.08, metalness: 0.25, emissive: '#0d4f6b', emissiveIntensity: 0.35, side: T.DoubleSide }), 0.046);
   waterMeshes.push(water);
   D.add(root);
   const pc = atAC(G, (G.a0 + G.a1) / 2, G.cBack + G.sg * (wd / 2));
@@ -15622,6 +15944,7 @@ function pensionGarden(k, RW, grp) {
       if (kind === 'round' || kind === 'pine') o = makeTree(kind, 0.9 + r() * 0.4, r);
       else if (kind === 'bench') o = PROP.bench(r);
       else if (kind === 'bush') o = PROP.shrub(r);
+      else if (REMAKE) o = RM.flowerPatch(r, 0.17);
       else { o = new T.Group(); const f = mesh(new T.CylinderGeometry(0.17, 0.17, 0.012, 14), flowerMat(), false, true); f.position.y = 0.006; o.add(f); }
       o.position.set(x, 0.04, z);
       o.rotation.y = r() * Math.PI * 2;
@@ -15667,6 +15990,8 @@ function buildScenery() {
     placed.push({ x, z, r: rad });
     let o;
     if (kind === 'round' || kind === 'pine') o = makeTree(kind, 1 + r() * 0.5, r);
+    else if (kind === 'bush' && REMAKE) o = RM.bush(r);
+    else if (kind === 'flowers' && REMAKE) o = RM.flowerPatch(r, 0.2);
     else if (kind === 'bush') { o = new T.Group(); for (let k = 0; k < 3; k++) { const b = mesh(new T.IcosahedronGeometry(0.08 + r() * 0.05, ICO), shrubMat()); b.position.set((r() - 0.5) * 0.2, 0.06, (r() - 0.5) * 0.2); o.add(b); } }
     else { o = new T.Group(); const f = mesh(new T.CylinderGeometry(0.2, 0.2, 0.012, 14), flowerMat(), false, true); f.position.y = 0.006; o.add(f); }
     o.position.set(x, 0, z);
@@ -15825,7 +16150,7 @@ function neonPlace(h) {
 function addNeon(h, g) {
   const { y, off, w, sh, f } = g.userData.signAt ? { ...g.userData.signAt, f: PLOTS[h].front } : neonPlace(h);
   const name = HOTELS[h].name, color = REMAKE ? '#e2b85c' : HOTELS[h].color;
-  const ppu = Math.min(128 / sh, 1024 / (w * HALO_W));
+  const ppu = REMAKE ? Math.min(220 / sh, 1800 / (w * HALO_W)) : Math.min(128 / sh, 1024 / (w * HALO_W));
   const root = new T.Group();
   root.position.set(f[0] * off, y, f[1] * off);
   root.rotation.y = Math.atan2(f[0], f[1]);
@@ -15839,6 +16164,12 @@ function addNeon(h, g) {
   halo.position.z = 0.02;
   halo.renderOrder = 6;
   root.add(back, plane, halo);
+  // Remake: Lackschild mit Goldrahmen
+  if (REMAKE) {
+    back.material = RM.MAT.lacquer;
+    const fr = 0.014, gold = RM.MAT.gold;
+    for (const [x, y, bw, bh] of [[0, sh / 2 + fr / 2, w + 2 * fr + 0.02, fr], [0, -sh / 2 - fr / 2, w + 2 * fr + 0.02, fr], [w / 2 + fr / 2 + 0.01, 0, fr, sh + 2 * fr], [-w / 2 - fr / 2 - 0.01, 0, fr, sh + 2 * fr]]) { const b = box(bw, bh, 0.024, gold, x, y, 0.006); b.castShadow = false; root.add(b); }
+  }
   root.traverse(o => { o.userData.hotel = h; });
   linearize(root);
   g.add(root);
