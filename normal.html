@@ -11684,8 +11684,8 @@ lazy('deck', () => texMat(paint(256, 27, c => { const { g, h, W, H, r } = c; con
 lazy('thatch', () => texMat(paint(256, 28, c => { const { g, h, W, H, r } = c; g.fillStyle = '#8c6a35'; g.fillRect(0, 0, W, H); for (let i = 0; i < 2600; i++) { const x = r() * W, y = r() * H, l = 6 + r() * 14; g.strokeStyle = r() < 0.5 ? 'rgba(220,180,110,.6)' : 'rgba(90,60,25,.5)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (r() - 0.5) * 2, y + l); g.stroke(); h.strokeStyle = gray(120 + r() * 120); h.beginPath(); h.moveTo(x, y); h.lineTo(x, y + l); h.stroke(); } for (let y = 0; y < H; y += H / 6) { g.fillStyle = 'rgba(40,25,5,.35)'; g.fillRect(0, y, W, 2); h.fillStyle = gray(40); h.fillRect(0, y, W, 2); } }, { relief: 2.0, blur: 0.5 }), 0.4, { roughness: 0.95 }));
 // Fensterinneres: Zimmer mit Vorhängen, an oder aus
 // ohne Glasscheibe davor (schlanke Stufe) spiegelt das Zimmerbild selbst ein wenig
-lazy('roomLit', () => own(new T.MeshStandardMaterial({ map: roomTex(false, '#7a4a28'), emissiveMap: roomTex(true, '#7a4a28'), emissive: new T.Color(1, 1, 1), emissiveIntensity: 0, roughness: LOD > 1 ? 0.9 : 0.2, envMapIntensity: LOD > 1 ? 1 : 1.6 })));
-lazy('roomDark', () => own(new T.MeshStandardMaterial({ map: roomTex(false, '#7a4a28'), roughness: LOD > 1 ? 0.9 : 0.2, envMapIntensity: LOD > 1 ? 1 : 1.6 })));
+lazy('roomLit', () => own(new T.MeshStandardMaterial({ map: roomTex(false, '#7a4a28'), emissiveMap: roomTex(true, '#7a4a28'), emissive: new T.Color(1, 1, 1), emissiveIntensity: 0, roughness: LOD > 1 ? 0.9 : 0.35 })));
+lazy('roomDark', () => own(new T.MeshStandardMaterial({ map: roomTex(false, '#7a4a28'), roughness: LOD > 1 ? 0.9 : 0.35 })));
 lazy('paper', () => own(new T.MeshStandardMaterial({ map: shojiTex(false), emissiveMap: shojiTex(true), emissive: new T.Color(1, 1, 1), emissiveIntensity: 0, roughness: 0.9 })));
 lazy('office', () => own(new T.MeshStandardMaterial({ map: officeTex(false), emissiveMap: officeTex(true), emissive: new T.Color(1, 1, 1), emissiveIntensity: 0, roughness: 0.6 })));
 // einfache Farben
@@ -11731,9 +11731,11 @@ function roomTex(lit, curtain) {
   const c = cnv(128, 160), g = c.getContext('2d');
   const gr = g.createRadialGradient(64, 60, 4, 64, 80, 110);
   if (lit) { gr.addColorStop(0, '#ffe2a8'); gr.addColorStop(0.5, '#f0a95a'); gr.addColorStop(1, '#7a4a28'); }
-  else { gr.addColorStop(0, '#3a3a44'); gr.addColorStop(1, '#141418'); }
-  g.fillStyle = gr; g.fillRect(0, 0, 128, 160);
-  const cc = lit ? 'rgba(160,40,40,.85)' : 'rgba(70,40,50,.9)';
+  else if (LOD > 1) { gr.addColorStop(0, '#3a3a44'); gr.addColorStop(1, '#141418'); }
+  // schlanke Stufe ohne Glasscheibe: das Fensterbild trägt selbst den Himmelsglanz, sonst wirken die Fenster schwarz
+  else { const lg = g.createLinearGradient(0, 0, 40, 160); lg.addColorStop(0, '#a9bdcc'); lg.addColorStop(0.45, '#6f8496'); lg.addColorStop(1, '#3d4c5c'); g.fillStyle = lg; g.fillRect(0, 0, 128, 160); }
+  if (lit || LOD > 1) { g.fillStyle = gr; g.fillRect(0, 0, 128, 160); }
+  const cc = lit ? 'rgba(160,40,40,.85)' : LOD > 1 ? 'rgba(70,40,50,.9)' : 'rgba(120,80,90,.55)';
   for (const x of [0, 104]) { g.fillStyle = cc; g.fillRect(x, 0, 24, 160); for (let k = 0; k < 4; k++) { g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x + 3 + k * 6, 0, 2, 160); } }
   if (lit) { g.fillStyle = 'rgba(255,240,200,.9)'; g.beginPath(); g.ellipse(64, 40, 10, 6, 0, 0, 7); g.fill(); }
   const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; return t;
